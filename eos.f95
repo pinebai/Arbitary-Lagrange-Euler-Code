@@ -6,7 +6,7 @@ type(physics),intent(inout) :: phy(:)
 integer(4) i
 real(8),parameter :: gamma = 1.4  
 do i = 1,size(phy(:))
-	phy(i)%p = (gamma - 1d0)*phy(i)%rho*phy(i)%e
+	phy(i)%p = (gamma - 1d0)*phy(i)%rho*phy(i)%e !Eos ideal gas
 enddo
 end subroutine gas
 end module eos 
