@@ -1,7 +1,0 @@
-CC=gfortran
-all :   
-	$(CC) -c -O3 *.f95 
-	
-
-
-
