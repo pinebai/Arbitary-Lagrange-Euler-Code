@@ -1,3 +1,4 @@
 mesh/*
 *.mod
 *.o
+*.inp

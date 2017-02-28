@@ -233,7 +233,7 @@ subroutine advect(dt,el,node,phy,art) !Subroutine calculation advection
  				!   |    | 	   .       ->  |         |      <- Cell shift
  				! 	4----1.....z_p(1)      z_p(4)---z_p(1)  
  				!        ^	      ^
- 				!        \        \  
+ 				!         \        \  
  				!        z_p(4)    shift node
  					z_p(3) = node(el(i)%elem(kl+2))%z
  					z_p(4) = node(el(i)%elem(kl+1))%z 

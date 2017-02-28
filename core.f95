@@ -26,7 +26,7 @@ do i = 1,n_node
 	read(1,*) node(i)%z,node(i)%r !read nodes 
 enddo
 read(1,*) n_bound !number bound
-allocate(bou%var(n_bound,3))
+allocate(bou%var(n_bound,7))
 do i = 1,n_bound
 	read(1,*) bou%var(i,:) !read all elements
 enddo
@@ -56,13 +56,8 @@ do i = 1,n_cell
 	endif	
 enddo	
 n = 6
-allocate(bou%num_bound(n),bou%type_bound(n))
-bou%num_bound(1) = 1
-bou%num_bound(2) = 2
-bou%num_bound(3) = 3
-bou%num_bound(4) = 4
-bou%num_bound(5) = 5
-bou%num_bound(6) = 6
+allocate(bou%type_bound(n))
+
 
 bou%type_bound(1) = 3
 bou%type_bound(2) = 3
@@ -91,12 +86,12 @@ do while(t<t_end)
 call volume(el,node,phy)
 call artvisc(dt,node,phy)
 call velocity(dt,el,node,phy)
-call boundary_vel(bou,node)
+call boundary_flow(bou,node)
 call energy(dt,el,node,phy)
-call boundary_vel(bou,node)
+call boundary_flow(bou,node)
 call grid(dt,node,art)
 call advect(dt,el,node,phy,art)
-call boundary_vel(bou,node)
+call boundary_flow(bou,node)
 call gas(phy)
 t = t + dt
 enddo
