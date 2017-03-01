@@ -16,7 +16,7 @@ type (physics),allocatable :: phy(:) !All physical value
 type (nodes),allocatable :: node(:)	!All nodes value
 type (elements),allocatable :: el(:) !Elements (cell {node1,node2,node3,node4}) and contact elements for Advection
 type (boundary) bou !Boundary elements
-type (artific) art
+type (numerical) numer
 
 open(1,file = 'mesh.inp')
 
@@ -26,7 +26,7 @@ do i = 1,n_node
 	read(1,*) node(i)%z,node(i)%r !read nodes 
 enddo
 read(1,*) n_bound !number bound
-allocate(bou%var(n_bound,7))
+allocate(bou%var(n_bound,6))
 do i = 1,n_bound
 	read(1,*) bou%var(i,:) !read all elements
 enddo
@@ -46,52 +46,61 @@ close(1)
 allocate(phy(n_cell)) !allocate physical
 !Initial conditions
 do i = 1,n_cell
-	if (el(i)%elem(1) == 9) then !Number 9 - see in GMSH
-		phy(i)%rho = 1d0
-		phy(i)%e = 2.5d0
+	if (el(i)%elem(1) == 18) then !Number 9 - see in GMSH
+		phy(i)%rho =  0.1d0
+		phy(i)%e = 1d0
 	endif
-	if (el(i)%elem(1) == 11) then !Number 11 - see in GMSH
+	if (el(i)%elem(1) == 14) then !Number 11 - see in GMSH
+		phy(i)%rho = 0.125d0
+		phy(i)%e = 2.0d0
+	endif	
+	if (el(i)%elem(1) == 16) then !Number 11 - see in GMSH
+		phy(i)%rho = 0.125d0
+		phy(i)%e = 2.0d0
+	endif	
+	if (el(i)%elem(1) == 22) then !Number 11 - see in GMSH
+		phy(i)%rho = 0.125d0
+		phy(i)%e = 2.0d0
+	endif	
+	if (el(i)%elem(1) == 20) then !Number 11 - see in GMSH
 		phy(i)%rho = 0.125d0
 		phy(i)%e = 2.0d0
 	endif	
 enddo	
-n = 6
+numer%art = 0.1d0
+numer%grid = 1.0d0
+numer%a0 = 1d0
+
+el(:)%rad = 2d0
+
+n = 12
 allocate(bou%type_bound(n))
-
-
-bou%type_bound(1) = 3
-bou%type_bound(2) = 3
+bou%type_bound = 0
+bou%type_bound(1) = 1
+bou%type_bound(2) = 1
 bou%type_bound(3) = 1
-bou%type_bound(4) = 3
-bou%type_bound(5) = 3
-bou%type_bound(6) = 1
-
-
-
-
-art%grid = 0d0 !Set grid velocity 0:1
+bou%type_bound(4) = 5
 
 node(:)%u = 0d0 !
 node(:)%v = 0d0 !
 
-
 dt = 0.0001 !time interval
 t = 0d0 !inintial time
-t_end = 0.25d0 !End time calculation
+t_end = 0.2d0 !End time calculation
 
-call volume0(el,node,phy) !Initial 
+call volume0(el,node,phy,numer,bou) !Initial 
 call gas(phy) !initial 
 
 do while(t<t_end)
-call volume(el,node,phy)
-call artvisc(dt,node,phy)
-call velocity(dt,el,node,phy)
-call boundary_flow(bou,node)
-call energy(dt,el,node,phy)
-call boundary_flow(bou,node)
-call grid(dt,node,art)
-call advect(dt,el,node,phy,art)
-call boundary_flow(bou,node)
+call volume(el,node,phy,numer)
+call artvisc(dt,node,phy,numer)
+call velocity(dt,el,node,phy,numer)
+call boundary_flow(bou,node,phy,el)
+call energy(dt,el,node,phy,numer)
+call boundary_flow(bou,node,phy,el)
+call grid(dt,node,numer)
+call advect(dt,el,node,phy,numer)
+call boundary_flow(bou,node,phy,el)
 call gas(phy)
 t = t + dt
 enddo

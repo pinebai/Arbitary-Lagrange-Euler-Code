@@ -1,4 +1,6 @@
-mesh/*
 *.mod
 *.o
 *.inp
+*.vtu
+*~
+ale2d

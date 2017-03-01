@@ -2,6 +2,7 @@ module object
 type elements
 integer(4) elem(5) !Elements
 integer(4) cont(9) !Contact elements : el1 el2 el3 el4 side1 side2 side3 side4
+real(8) rad !radial
 end type elements
 
 
@@ -33,9 +34,11 @@ real(8) mas_til_v !vertex mass in node for advect
 real(8) num_cont !number cell near node
 end type nodes
 
-type artific !True Name???
+type numerical 
+real(8) art !Artvisc
 real(8) grid  !Proportional between lagrange grid and euler grid (1 - full lagrange, 0 - full euler, other - ALE)
-end type artific
+real(8) a0 !For Euler a0
+end type numerical
 
 type boundary
 integer(4),allocatable :: num_bound(:),type_bound(:) !Number bound and type_bound (1- fix, 2- fix U- component, 3- fix V-component)

@@ -22,7 +22,12 @@ enddo
 write(1,*) '</DataArray>'
 write(1,*) '</Points>'
 write(1,*) '<CellData Scalars="scalars">'
-
+!Density!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+write(1,*) '<DataArray type="Float64" Name="mas" format="ascii">'
+do i = 1,size(phy(:))
+write(1,*) phy(i)%mas
+enddo
+write(1,*) '</DataArray>'
 !Density!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 write(1,*) '<DataArray type="Float64" Name="rho" format="ascii">'
 do i = 1,size(phy(:))
