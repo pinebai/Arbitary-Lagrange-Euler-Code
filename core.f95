@@ -46,43 +46,45 @@ close(1)
 allocate(phy(n_cell)) !allocate physical
 !Initial conditions
 do i = 1,n_cell
-	if (el(i)%elem(1) == 18) then !Number 9 - see in GMSH
+	if (el(i)%elem(1) == 18) then !Number mat - see in GMSH
 		phy(i)%rho =  0.1d0
 		phy(i)%e = 1d0
 	endif
-	if (el(i)%elem(1) == 14) then !Number 11 - see in GMSH
+	if (el(i)%elem(1) == 14) then 
 		phy(i)%rho = 0.125d0
 		phy(i)%e = 2.0d0
 	endif	
-	if (el(i)%elem(1) == 16) then !Number 11 - see in GMSH
+	if (el(i)%elem(1) == 16) then 
 		phy(i)%rho = 0.125d0
 		phy(i)%e = 2.0d0
 	endif	
-	if (el(i)%elem(1) == 22) then !Number 11 - see in GMSH
+	if (el(i)%elem(1) == 22) then 
 		phy(i)%rho = 0.125d0
 		phy(i)%e = 2.0d0
 	endif	
-	if (el(i)%elem(1) == 20) then !Number 11 - see in GMSH
+	if (el(i)%elem(1) == 20) then 
 		phy(i)%rho = 0.125d0
 		phy(i)%e = 2.0d0
 	endif	
 enddo	
-numer%art = 0.1d0
-numer%grid = 1.0d0
-numer%a0 = 1d0
+numer%art = 0.1d0 !Artification viscosity
+numer%grid = 1.0d0 !Grid proportional velocity
+numer%a0 = 1d0 ! a0 for Euler stability
 
-el(:)%rad = 2d0
+el(:)%rad = 2d0 !Radial
 
 n = 12
 allocate(bou%type_bound(n))
 bou%type_bound = 0
-bou%type_bound(1) = 1
+bou%type_bound(1) = 1 !Solid wall - fix all boundary velocity
 bou%type_bound(2) = 1
 bou%type_bound(3) = 1
-bou%type_bound(4) = 5
+bou%type_bound(4) = 5 !Reflection
 
 node(:)%u = 0d0 !
 node(:)%v = 0d0 !
+node(:)%u_l = 0d0 !
+node(:)%v_l = 0d0 !
 
 dt = 0.0001 !time interval
 t = 0d0 !inintial time
@@ -97,7 +99,6 @@ call artvisc(dt,node,phy,numer)
 call velocity(dt,el,node,phy,numer)
 call boundary_flow(bou,node,phy,el)
 call energy(dt,el,node,phy,numer)
-call boundary_flow(bou,node,phy,el)
 call grid(dt,node,numer)
 call advect(dt,el,node,phy,numer)
 call boundary_flow(bou,node,phy,el)

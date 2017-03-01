@@ -11,8 +11,9 @@ integer(4) i,l(6),k
 
 do i = 1,size(bou%var(:,1))
     l(:) = bou%var(i,:)
+    ! l = (number boundary, bound_1_cell_1, cell_1, bound_2_cell_1, cell_2, bound_cell_1)
     k = bou%type_bound(l(1))
-    if (k>0) then
+    if (k.ne.0) then
         select case(k)
             case(1) !Full fix U and V
                 call solid_wall(l,bou,node,phy,el,1)
@@ -38,7 +39,8 @@ integer(4) i1,i2
 
 call posit(l(2),i1,i2)
 i1 = el(l(3))%elem(i1+1)                
-i2 = el(l(3))%elem(i2+1)                 
+i2 = el(l(3))%elem(i2+1) 
+
 if (typ == 1) then !If boundary = 1 fix U and V	
     node(i1)%u = 0d0
     node(i2)%u = 0d0     
@@ -76,40 +78,20 @@ type(nodes),intent(inout) :: node(:)
 type(physics),intent(inout) :: phy(:)
 type(elements),intent(inout) :: el(:)
 integer(4),intent(in) :: l(6),typ
-integer(4) i1(3),i2(3),c1,c2
+integer(4) i1(3),i2(3),el1,el2
 
-c1 = l(3)
-c2 = l(5)
+el1 = l(3) !Set number cell_1
+el2 = l(5) !Set number cell_2
 
-call posit(l(2),i1(1),i2(1))
-i1(1) = el(l(3))%elem(i1(1)+1)                
-i2(1) = el(l(3))%elem(i2(1)+1) 
+call posit(l(2),i1(1),i2(1)) !Find index node for element
+i1(1) = el(l(3))%elem(i1(1)+1) !node_1 boundary cell_1                
+i2(1) = el(l(3))%elem(i2(1)+1) !node_2 boundary cell_1
 
-call posit(l(4),i1(2),i2(2))
-i1(2) = el(l(3))%elem(i1(2)+1)                
-i2(2) = el(l(3))%elem(i2(2)+1) 
+call posit(l(4),i1(2),i2(2)) !Find index node for element
+i1(2) = el(l(3))%elem(i1(2)+1) !node_3 boundary cell_1                 
+i2(2) = el(l(3))%elem(i2(2)+1) !node_4 boundary cell_1   
 
-call posit(l(6),i1(3),i2(3))
-i1(3) = el(l(5))%elem(i1(3)+1)                
-i2(3) = el(l(5))%elem(i2(3)+1) 
-
-
-!node(i1(2))%u = node(i1(3))%u
-!node(i2(2))%u = node(i2(3))%u
-
-!node(i1(2))%u_l = node(i1(3))%u_l
-!node(i2(2))%u_l = node(i2(3))%u_l
-
-
-!node(i1(2))%v = node(i1(3))%v
-!node(i2(2))%v = node(i2(3))%v
-
-!node(i1(2))%v_l = node(i1(3))%v_l
-!node(i2(2))%v_l = node(i2(3))%v_l
-
-
-
-node(i1(1))%u = node(i1(2))%u
+node(i1(1))%u = node(i1(2))%u 
 node(i2(1))%u = node(i2(2))%u
 
 node(i1(1))%u_l = node(i1(2))%u_l
@@ -122,9 +104,9 @@ node(i2(1))%v = node(i2(2))%v
 node(i1(1))%v_l = node(i1(2))%v_l
 node(i2(1))%v_l = node(i2(2))%v_l
 
-phy(c1)%p = phy(c2)%p  
-phy(c1)%rho = phy(c2)%rho 
-phy(c1)%e = phy(c2)%e
+phy(el1)%p = phy(el2)%p  
+phy(el1)%rho = phy(el2)%rho 
+phy(el1)%e = phy(el2)%e
 end subroutine out_flow
 
 subroutine reflection(l,bou,node,phy,el,typ)
@@ -133,10 +115,10 @@ type(nodes),intent(inout) :: node(:)
 type(physics),intent(inout) :: phy(:)
 type(elements),intent(inout) :: el(:)
 integer(4),intent(in) :: l(6),typ
-integer(4) i1(3),i2(3),c1,c2
+integer(4) i1(3),i2(3),el1,el2
 
-c1 = l(3)
-c2 = l(5)
+el1 = l(3)
+el2 = l(5)
 
 call posit(l(2),i1(1),i2(1))
 i1(1) = el(l(3))%elem(i1(1)+1)                
@@ -146,31 +128,31 @@ call posit(l(4),i1(2),i2(2))
 i1(2) = el(l(3))%elem(i1(2)+1)                
 i2(2) = el(l(3))%elem(i2(2)+1) 
 
-call posit(l(6),i1(3),i2(3))
-i1(3) = el(l(5))%elem(i1(3)+1)                
-i2(3) = el(l(5))%elem(i2(3)+1) 
+call posit(l(6),i1(3),i2(3)) !Find node in cell_2
+i1(3) = el(l(5))%elem(i1(3)+1) !Set number node_1 for cell_2                
+i2(3) = el(l(5))%elem(i2(3)+1) !Set number node_2 for cell_2
 
-node(i1(2))%v = 0d0
-node(i2(2))%v = 0d0     
+node(i1(2))%v = 0d0 !Set V-velocity zero
+node(i2(2))%v = 0d0 !Set V-velocity zero    
 
-node(i1(2))%v_l = 0d0
+node(i1(2))%v_l = 0d0 
 node(i2(2))%v_l = 0d0
 
-node(i1(1))%u = node(i1(2))%u
+node(i1(1))%u = node(i1(2))%u !Set u-velocity equivalent
 node(i2(1))%u = node(i2(2))%u
 
 node(i1(1))%u_l = node(i1(2))%u_l
 node(i2(1))%u_l = node(i2(2))%u_l
 
-node(i1(1))%v = -node(i1(3))%v
+node(i1(1))%v = -node(i1(3))%v !Set V-velocity inverse equivalent between node_1 cell_1 and node_1 cell_2
 node(i2(1))%v = -node(i2(3))%v
 
 node(i1(1))%v_l = -node(i1(3))%v_l
 node(i2(1))%v_l = -node(i2(3))%v_l
 
-phy(c1)%p = phy(c2)%p  
-!phy(c1)%rho = phy(c2)%rho 
-phy(c1)%e = phy(c2)%e
+phy(el1)%p = phy(el2)%p  
+!phy(el1)%rho = phy(el2)%rho 
+phy(el1)%e = phy(el2)%e
 end subroutine reflection
 
 end subroutine boundary_flow
@@ -178,20 +160,24 @@ end subroutine boundary_flow
 subroutine posit(num,i1,i2)
 integer(4),intent(in) :: num
 integer(4),intent(out) :: i1,i2
-
+!     2  
+!   3---2
+! 3 |   | 1
+!   4---1
+!     4
 select case(num)
 	case(1)
 		i1 = 1
 		i2 = 2
 	case(2)
 		i1 = 2
-		i2 = 3	
+		i2 = 3
 	case(3)
 		i1 = 3
-		i2 = 4	
+		i2 = 4
 	case(4)
 		i1 = 1
 		i2 = 4
-end select		
+end select
 end subroutine posit
 end module type_boundary
