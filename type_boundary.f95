@@ -31,15 +31,15 @@ do i = 1,size(bou%var(:,1))
     endif
 enddo
 
-do i = 1,size(bou%var(:,1))
-    l(:) = bou%var(i,:)
-    k = bou%type_bound(l(1))
-    if (k.ne.0) then
-		if (k == 1) call solid_wall(l,bou,node,phy,el,1)  
-		if (k == 2) call solid_wall(l,bou,node,phy,el,2) 
-		if (k == 3) call solid_wall(l,bou,node,phy,el,3)
-    endif
-enddo
+! do i = 1,size(bou%var(:,1))
+!     l(:) = bou%var(i,:)
+!     k = bou%type_bound(l(1))
+!     if (k.ne.0) then
+! 		if (k == 1) call solid_wall(l,bou,node,phy,el,1)  
+! 		if (k == 2) call solid_wall(l,bou,node,phy,el,2) 
+! 		if (k == 3) call solid_wall(l,bou,node,phy,el,3)
+!     endif
+! enddo
 
 contains
 subroutine solid_wall(l,bou,node,phy,el,typ)
@@ -66,6 +66,9 @@ if (typ == 1) then !If boundary = 1 fix U and V
 
     node(i1)%v_l = 0d0
     node(i2)%v_l = 0d0
+    
+    node(i1)%mark = 1
+    node(i2)%mark = 1
 endif
 
 if (typ == 2) then !If boundary = 2 fix U
@@ -74,6 +77,9 @@ if (typ == 2) then !If boundary = 2 fix U
 
     node(i1)%u_l = 0d0
     node(i2)%u_l = 0d0
+
+    node(i1)%mark = 2
+    node(i2)%mark = 2
 endif
 
 if (typ == 3) then !If boundary = 3 fix V
@@ -82,6 +88,9 @@ if (typ == 3) then !If boundary = 3 fix V
 
     node(i1)%v_l = 0d0
     node(i2)%v_l = 0d0
+
+    node(i1)%mark = 3
+    node(i2)%mark = 3
 endif
 end subroutine solid_wall
 
@@ -104,18 +113,25 @@ call posit(l(4),i1(2),i2(2)) !Find index node for element
 i1(2) = el(l(3))%elem(i1(2)+1) !node_3 boundary cell_1                 
 i2(2) = el(l(3))%elem(i2(2)+1) !node_4 boundary cell_1   
 
-node(i1(1))%u = node(i1(2))%u 
-node(i2(1))%u = node(i2(2))%u
+if ((node(i1(1))%mark.ne.1).and.(node(i1(1))%mark.ne.2)) then
+    node(i1(1))%u = node(i1(2))%u 
+    node(i1(1))%u_l = node(i1(2))%u_l
+endif
 
-node(i1(1))%u_l = node(i1(2))%u_l
-node(i2(1))%u_l = node(i2(2))%u_l
+if ((node(i1(1))%mark.ne.1).and.(node(i1(1))%mark.ne.3)) then
+    node(i1(1))%v = node(i1(2))%v
+    node(i1(1))%v_l = node(i1(2))%v_l
+endif
 
+if ((node(i2(1))%mark.ne.1).and.(node(i2(1))%mark.ne.2)) then
+    node(i2(1))%u = node(i2(2))%u
+    node(i2(1))%u_l = node(i2(2))%u_l
+endif
 
-node(i1(1))%v = node(i1(2))%v
-node(i2(1))%v = node(i2(2))%v
-
-node(i1(1))%v_l = node(i1(2))%v_l
-node(i2(1))%v_l = node(i2(2))%v_l
+if ((node(i2(1))%mark.ne.1).and.(node(i2(1))%mark.ne.3)) then
+    node(i2(1))%v = node(i2(2))%v
+    node(i2(1))%v_l = node(i2(2))%v_l
+endif
 
 phy(el1)%p = phy(el2)%p  
 phy(el1)%rho = phy(el2)%rho 
@@ -144,26 +160,34 @@ call posit(l(6),i1(3),i2(3)) !Find node in cell_2
 i1(3) = el(l(5))%elem(i1(3)+1) !Set number node_1 for cell_2                
 i2(3) = el(l(5))%elem(i2(3)+1) !Set number node_2 for cell_2
 
-node(i1(2))%v = 0d0 !Set V-velocity zero
-node(i2(2))%v = 0d0 !Set V-velocity zero    
 
-node(i1(2))%v_l = 0d0 
+node(i1(2))%v = 0d0 !Set V-velocity zero
+node(i1(2))%v_l = 0d0
+
+if ((node(i1(1))%mark.ne.1).and.(node(i1(1))%mark.ne.2)) then
+    node(i1(1))%u = node(i1(2))%u !Set u-velocity equivalent
+    node(i1(1))%u_l = node(i1(2))%u_l
+endif
+
+if ((node(i1(1))%mark.ne.1)) then!.or.(node(i1(1))%mark.ne.3)) then    
+    node(i1(1))%v = -node(i1(3))%v !Set V-velocity inverse equivalent between node_1 cell_1 and node_1 cell_2
+    node(i1(1))%v_l = -node(i1(3))%v_l
+endif
+
+node(i2(2))%v = 0d0 !Set V-velocity zero   
 node(i2(2))%v_l = 0d0
 
-node(i1(1))%u = node(i1(2))%u !Set u-velocity equivalent
-node(i2(1))%u = node(i2(2))%u
-
-node(i1(1))%u_l = node(i1(2))%u_l
-node(i2(1))%u_l = node(i2(2))%u_l
-
-node(i1(1))%v = -node(i1(3))%v !Set V-velocity inverse equivalent between node_1 cell_1 and node_1 cell_2
-node(i2(1))%v = -node(i2(3))%v
-
-node(i1(1))%v_l = -node(i1(3))%v_l
-node(i2(1))%v_l = -node(i2(3))%v_l
+if ((node(i2(1))%mark.ne.1).and.(node(i2(1))%mark.ne.2)) then
+    node(i2(1))%u = node(i2(2))%u
+    node(i2(1))%u_l = node(i2(2))%u_l
+endif
+if ((node(i2(1))%mark.ne.1)) then!  .or.(node(i2(1))%mark.ne.3)) then
+    node(i2(1))%v = -node(i2(3))%v
+    node(i2(1))%v_l = -node(i2(3))%v_l
+endif
 
 phy(el1)%p = phy(el2)%p  
-!phy(el1)%rho = phy(el2)%rho 
+phy(el1)%rho = phy(el2)%rho 
 phy(el1)%e = phy(el2)%e
 end subroutine reflection
 
@@ -193,3 +217,4 @@ select case(num)
 end select
 end subroutine posit
 end module type_boundary
+
