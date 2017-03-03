@@ -16,10 +16,6 @@ real(8) atr,abl
 node(:)%mas_v = 0d0
 node(:)%num_cont = 0d0
 node(:)%mark = 0
-!do i = 1,size(bou%var(:,1))
-!    l(1:3) = bou%var(i,1:3)
-!	if (bou%type_bound(l(1)) == 5) el(l(3))%rad = 1d0
-!enddo
 
 do i = 1,size(phy(:)%vol)
 
@@ -31,12 +27,12 @@ do i = 1,size(phy(:)%vol)
 !Sale
 !1 2 3 4
 !el(i)%elem
-!2 3 4 5
+!1 2 3 4
 
-	l(1) = el(i)%elem(2) 
-	l(2) = el(i)%elem(3)
-	l(3) = el(i)%elem(4)
-	l(4) = el(i)%elem(5)
+	l(1) = el(i)%elem(1) 
+	l(2) = el(i)%elem(2)
+	l(3) = el(i)%elem(3)
+	l(4) = el(i)%elem(4)
 
 !Calculation triangles left and right in cell 
 	atr = 0.5d0*((node(l(3))%z-node(l(2))%z)*(node(l(1))%r-node(l(2))%r)-(node(l(1))%z-node(l(2))%z)*(node(l(3))%r-node(l(2))%r)) !0.5*((x3-x2)*(y1-y2)-(x1-x2)*(y3-y2))
@@ -90,10 +86,10 @@ do i = 1,size(phy(:)%vol)
 	
 	!Calculation volume,mass and density
 	!first material then shift to 1
-	l(1) = el(i)%elem(2) 
-	l(2) = el(i)%elem(3)
-	l(3) = el(i)%elem(4)
-	l(4) = el(i)%elem(5)
+	l(1) = el(i)%elem(1) 
+	l(2) = el(i)%elem(2)
+	l(3) = el(i)%elem(3)
+	l(4) = el(i)%elem(4)
 
 	atr = 0.5d0*((node(l(3))%z-node(l(2))%z)*(node(l(1))%r-node(l(2))%r)-(node(l(1))%z-node(l(2))%z)*(node(l(3))%r-node(l(2))%r)) !0.5*((x3-x2)*(y1-y2)-(x1-x2)*(y3-y2))
 	abl = 0.5d0*((node(l(1))%z-node(l(4))%z)*(node(l(3))%r-node(l(4))%r)-(node(l(3))%z-node(l(4))%z)*(node(l(1))%r-node(l(4))%r)) !0.5*((x1-x4)*(y3-y4)-(x3-x4)*(y1-y4))
@@ -133,7 +129,7 @@ an = 0.005d0
 ksi = 0.3d0
 do i = 1,size(phy(:)) !
 	do j = 1,4 !Cycle for all nodes cell
-		l = el(i)%elem(j+1) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
+		l = el(i)%elem(j) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
 		call posit(i,j,phy,el,im,ip,ia) !Function calculation position + (ip) and - (im)			
 node(l)%u = node(l)%u + 0.25d0*an*(0.5d0*(1d0+ksi)*(node(ip)%u_l+node(im)%u_l)-ksi*node(ia)%u_l-node(l)%u_l)
 node(l)%v = node(l)%v + 0.25d0*an*(0.5d0*(1d0+ksi)*(node(ip)%v_l+node(im)%v_l)-ksi*node(ia)%v_l-node(l)%v_l)
@@ -145,7 +141,7 @@ call boundary_flow(bou,node,phy,el)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 do i = 1,size(phy(:)) !
 	do j = 1,4 !Cycle for all nodes cell
-		l = el(i)%elem(j+1) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
+		l = el(i)%elem(j) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
 		call posit(i,j,phy,el,im,ip,ia) !Function calculation position 
 		
 		rad_com(1) = (0.5d0*(node(ip)%r+node(im)%r))**(el(i)%rad-1d0) !Radial component for z
@@ -168,7 +164,6 @@ type(physics),intent(inout) :: phy(:)
 integer(4),intent(in) :: i,j
 integer(4),intent(out) :: im,ip,ia
 integer(4) l 
-l = 1
 select case(j)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 !This countur for node (o)
@@ -193,36 +188,36 @@ select case(j)
 ! |	 /  |
 ! |	v   |
 ! 4----(1)			 	  	
-		im = el(i)%elem(l+2)    
-		ip = el(i)%elem(l+4) 
-		ia = el(i)%elem(l+3)
+		im = el(i)%elem(2)    
+		ip = el(i)%elem(4) 
+		ia = el(i)%elem(3)
 	case(2) !Node 2
 ! 3----(2) 
 ! | \   |
 ! |	 \  |
 ! |	  v |
 ! 4-----1		 
-		im = el(i)%elem(l+3)
-		ip = el(i)%elem(l+1)
-		ia = el(i)%elem(l+4)
+		im = el(i)%elem(3)
+		ip = el(i)%elem(1)
+		ia = el(i)%elem(4)
 	case(3) !Node 3
 !(3)----2 
 ! |   ^ |
 ! |	 /  |
 ! |	/   |
 ! 4-----1 		
-		im = el(i)%elem(l+4)
-		ip = el(i)%elem(l+2)
-		ia = el(i)%elem(l+1)
+		im = el(i)%elem(4)
+		ip = el(i)%elem(2)
+		ia = el(i)%elem(1)
 	case(4) !Node 4
 ! 3-----2 
 ! | ^   |
 ! |	 \  |
 ! |	  \ |
 !(4)----1				
-		im = el(i)%elem(l+1)
-		ip = el(i)%elem(l+3)
-		ia = el(i)%elem(l+2)
+		im = el(i)%elem(1)
+		ip = el(i)%elem(3)
+		ia = el(i)%elem(2)
 end select	
 end subroutine posit
 end subroutine velocity 
@@ -243,7 +238,7 @@ phy(:)%vm = 0d0 !Set zero cell velocity V-component
 
 do i = 1,size(phy(:))
 	do j = 1,4 !Cycle for all nodes cell
-		l = el(i)%elem(j+1) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
+		l = el(i)%elem(j) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
 		u_til(j) = 0.5d0*(node(l)%u+node(l)%u_l) ! U_til = 1/2(U+U_old) - intermediate velocity (See SALE2D or Samarsky)
 		v_til(j) = 0.5d0*(node(l)%v+node(l)%v_l) ! V_til = 1/2(V+V_old) - intermediate velocity (See SALE2D or Samarsky)
 		z_til(j) = node(l)%z + u_til(j)*dt !Calculation new intermediate z-position for define intermediate Volume
@@ -270,10 +265,8 @@ type(nodes),intent(inout) :: node(:)
 type(physics),intent(inout) :: phy(:)
 type(numerical),intent(inout) :: numer
 real(8),intent(in) :: dt
-integer(4) i,j,k(4),ii,kl,l
+integer(4) i,j,k(4),ii,l
 real(8) atr,abl,u_til,v_til,Pij,side
-
-kl = 1
 
 phy(:)%um = 0d0 !Set zero cell velocity U-component
 phy(:)%vm = 0d0 !Set zero cell velocity V-component
@@ -282,7 +275,7 @@ do i = 1,size(phy(:))
     u_til = 0d0
     v_til = 0d0
 	do j = 1,4 !Cycle for all nodes cell
-		l = el(i)%elem(kl+j) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
+		l = el(i)%elem(j) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
         k(j) = l
 		phy(i)%um = phy(i)%um + 0.25d0*node(l)%u !Calculation cell-centered velocity U
 		phy(i)%vm = phy(i)%vm + 0.25d0*node(l)%v !Calculation cell-centered velocity V
@@ -300,13 +293,13 @@ do i = 1,size(phy(:))
 		!             \
 		!        ------1------
 		select case(el(i)%cont(j+4)) !Define number side contact
-			!      2
-			!      |
-			! 	3----2   
-			! 3-|    |-1	 
-			! 	4----1
-			!	   |
-			!      4
+		!      2
+		!      |
+		!   3----2   
+		! 3-|    |-1 
+		!   4----1
+		!      |
+		!      4
 			case(1) !Right side
                 side = 0.5*((node(k(2))%u+node(k(1))%u)*(node(k(2))%r-node(k(1))%r)-&
 (node(k(2))%v+node(k(1))%v)*(node(k(2))%z-node(k(1))%z))*(0.5d0*(node(k(2))%r+node(k(1))%r))**((el(i)%rad-1d0)) 
@@ -346,9 +339,9 @@ type(physics),intent(inout) :: phy(:)
 type (boundary),intent(inout) :: bou
 type(numerical),intent(inout) :: numer
 real(8),intent(in) :: dt
-integer(4) i,j,k,l,ii,kl
+integer(4) i,j,k,l,ii
 real(8) z_p(4),r_p(4),vol,FV,a_V
-kl = 1 !For shift index in el(:)%elem
+
 if (numer%grid<1) then !if numer%grid = 1 then bypassed this block 
 
 	do i = 1,size(phy(:)%vol)
@@ -379,15 +372,15 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 				!        ^	      ^
 				!         \        \  
 				!        z_p(4)    shift node
-					z_p(3) = node(el(i)%elem(kl+2))%z
-					z_p(4) = node(el(i)%elem(kl+1))%z 
-					z_p(1) = z_p(4) + node(el(i)%elem(kl+1))%u*dt*(1d0 - numer%grid)   !z(final position) = z(lagrange) - u(velocity shift node in back position) *dt
-					z_p(2) = z_p(3) + node(el(i)%elem(kl+2))%u*dt*(1d0 - numer%grid)
+					z_p(3) = node(el(i)%elem(2))%z
+					z_p(4) = node(el(i)%elem(1))%z 
+					z_p(1) = z_p(4) + node(el(i)%elem(1))%u*dt*(1d0 - numer%grid)   !z(final position) = z(lagrange) - u(velocity shift node in back position) *dt
+					z_p(2) = z_p(3) + node(el(i)%elem(2))%u*dt*(1d0 - numer%grid)
 				!r -component
-					r_p(3) = node(el(i)%elem(kl+2))%r
-					r_p(4) = node(el(i)%elem(kl+1))%r 
-					r_p(1) = r_p(4) + node(el(i)%elem(kl+1))%v*dt*(1d0 - numer%grid)
-					r_p(2) = r_p(3) + node(el(i)%elem(kl+2))%v*dt*(1d0 - numer%grid)
+					r_p(3) = node(el(i)%elem(2))%r
+					r_p(4) = node(el(i)%elem(1))%r 
+					r_p(1) = r_p(4) + node(el(i)%elem(1))%v*dt*(1d0 - numer%grid)
+					r_p(2) = r_p(3) + node(el(i)%elem(2))%v*dt*(1d0 - numer%grid)
 												
 				case(2)! Top side
 				!z_p(3)..z_p(2)	
@@ -397,30 +390,30 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 				! 	3----2
 				!   |    | 	   
 				! 	4----1
-					z_p(1) = node(el(i)%elem(kl+2))%z 
-					z_p(4) = node(el(i)%elem(kl+3))%z
-					z_p(2) = z_p(1) + node(el(i)%elem(kl+2))%u*dt*(1d0 - numer%grid)
-					z_p(3) = z_p(4) + node(el(i)%elem(kl+3))%u*dt*(1d0 - numer%grid)
+					z_p(1) = node(el(i)%elem(2))%z 
+					z_p(4) = node(el(i)%elem(3))%z
+					z_p(2) = z_p(1) + node(el(i)%elem(2))%u*dt*(1d0 - numer%grid)
+					z_p(3) = z_p(4) + node(el(i)%elem(3))%u*dt*(1d0 - numer%grid)
 				
-					r_p(1) = node(el(i)%elem(kl+2))%r 
-					r_p(4) = node(el(i)%elem(kl+3))%r
-					r_p(2) = r_p(1) + node(el(i)%elem(kl+2))%v*dt*(1d0 - numer%grid)
-					r_p(3) = r_p(4) + node(el(i)%elem(kl+3))%v*dt*(1d0 - numer%grid)
+					r_p(1) = node(el(i)%elem(2))%r 
+					r_p(4) = node(el(i)%elem(3))%r
+					r_p(2) = r_p(1) + node(el(i)%elem(2))%v*dt*(1d0 - numer%grid)
+					r_p(3) = r_p(4) + node(el(i)%elem(3))%v*dt*(1d0 - numer%grid)
 			
 				case(3)! Left side
 				! 
 				!z_p(3).....3----2
 				!   		|    | 	   
 				!z_p(4).....4----1
-					z_p(1) = node(el(i)%elem(kl+4))%z 
-					z_p(2) = node(el(i)%elem(kl+3))%z 
-					z_p(3) = z_p(2) + node(el(i)%elem(kl+3))%u*dt*(1d0 - numer%grid)
-					z_p(4) = z_p(1) + node(el(i)%elem(kl+4))%u*dt*(1d0 - numer%grid)
+					z_p(1) = node(el(i)%elem(4))%z 
+					z_p(2) = node(el(i)%elem(3))%z 
+					z_p(3) = z_p(2) + node(el(i)%elem(3))%u*dt*(1d0 - numer%grid)
+					z_p(4) = z_p(1) + node(el(i)%elem(4))%u*dt*(1d0 - numer%grid)
 				
-					r_p(1) = node(el(i)%elem(kl+4))%r 
-					r_p(2) = node(el(i)%elem(kl+3))%r 
-					r_p(3) = r_p(2) + node(el(i)%elem(kl+3))%v*dt*(1d0 - numer%grid)
-					r_p(4) = r_p(1) + node(el(i)%elem(kl+4))%v*dt*(1d0 - numer%grid)
+					r_p(1) = node(el(i)%elem(4))%r 
+					r_p(2) = node(el(i)%elem(3))%r 
+					r_p(3) = r_p(2) + node(el(i)%elem(3))%v*dt*(1d0 - numer%grid)
+					r_p(4) = r_p(1) + node(el(i)%elem(4))%v*dt*(1d0 - numer%grid)
 				case(4) !Bottom side
 				! 
 				!    3----2
@@ -430,15 +423,15 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 				!    .    . 
 				!	 .    . 
 				!z_p(4)...z_p(1)		
-					z_p(2) = node(el(i)%elem(kl+1))%z 
-					z_p(3) = node(el(i)%elem(kl+4))%z 
-					z_p(1) = z_p(2) + node(el(i)%elem(kl+1))%u*dt*(1d0 - numer%grid)
-					z_p(4) = z_p(3) + node(el(i)%elem(kl+4))%u*dt*(1d0 - numer%grid)
+					z_p(2) = node(el(i)%elem(1))%z 
+					z_p(3) = node(el(i)%elem(4))%z 
+					z_p(1) = z_p(2) + node(el(i)%elem(1))%u*dt*(1d0 - numer%grid)
+					z_p(4) = z_p(3) + node(el(i)%elem(4))%u*dt*(1d0 - numer%grid)
 				
-					r_p(2) = node(el(i)%elem(kl+1))%r 
-					r_p(3) = node(el(i)%elem(kl+4))%r 
-					r_p(1) = r_p(2) + node(el(i)%elem(kl+1))%v*dt*(1d0 - numer%grid)
-					r_p(4) = r_p(3) + node(el(i)%elem(kl+4))%v*dt*(1d0 - numer%grid)
+					r_p(2) = node(el(i)%elem(1))%r 
+					r_p(3) = node(el(i)%elem(4))%r 
+					r_p(1) = r_p(2) + node(el(i)%elem(1))%v*dt*(1d0 - numer%grid)
+					r_p(4) = r_p(3) + node(el(i)%elem(4))%v*dt*(1d0 - numer%grid)
 				case default !When we have zero index in el(:)%cont
 					exit ext	
 			end select
@@ -455,7 +448,7 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 	node(:)%mas_til_v = 0d0
 	do i = 1,size(phy(:))
 		do j = 1,4 !Cycle for all nodes in cell
-			l = el(i)%elem(j+1) !Number node
+			l = el(i)%elem(j) !Number node
 			node(l)%mas_til_v = node(l)%mas_til_v+0.25d0*phy(i)%mas_til ! M_v = 1/4(M1+M2+M3+M4) 
 		enddo
 	enddo	
@@ -467,7 +460,7 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 	!Find new vertex velocity
 	do i = 1,size(phy(:))
 		do j = 1,4 !Cycle for all nodes in cell
-			l = el(i)%elem(j+1) !Number node 
+			l = el(i)%elem(j) !Number node 
 			!We should reestablish our velocity from flux momentum
 			! But when we have incomplete set cells near node (less <4), we should division on count cell (sum cell near node)
 			!   
@@ -505,7 +498,7 @@ phy(:)%vm = 0d0
 do i = 1,size(phy(:)%vol)
     us = 0
 	do j = 1,4 !Cycle for all nodes in cell
-		l = el(i)%elem(j+1) !Number node
+		l = el(i)%elem(j) !Number node
         phy(i)%um = phy(i)%um + 0.25d0*node(l)%u !Calculation cell-centered velocity U
 		phy(i)%vm = phy(i)%vm + 0.25d0*node(l)%v !Calculation cell-centered velocity V
 	enddo	
@@ -536,10 +529,10 @@ real(8),intent(out) :: dudz,dudr,dvdz,dvdr
 real(8) area
 integer(4) l(4)
 
-l(1) = el(i)%elem(2) 
-l(2) = el(i)%elem(3)
-l(3) = el(i)%elem(4)
-l(4) = el(i)%elem(5)
+l(1) = el(i)%elem(1) 
+l(2) = el(i)%elem(2)
+l(3) = el(i)%elem(3)
+l(4) = el(i)%elem(4)
 
 area = (node(l(2))%z-node(l(4))%z)*(node(l(3))%r-node(l(1))%r)-(node(l(1))%z-node(l(3))%z)*(node(l(4))%r-node(l(2))%r) !Calculation Area
 

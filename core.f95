@@ -46,23 +46,23 @@ close(1)
 allocate(phy(n_cell)) !allocate physical
 !Initial conditions
 do i = 1,n_cell
-	if (el(i)%elem(1) == 18) then !Number mat - see in GMSH
+	if (el(i)%elem(5) == 18) then !Number mat - see in GMSH
 		phy(i)%rho =  1.0d0
 		phy(i)%e = 2.5d0
 	endif
-	if (el(i)%elem(1) == 14) then 
+	if (el(i)%elem(5) == 14) then 
 		phy(i)%rho = 0.125d0
 		phy(i)%e = 2.0d0
 	endif	
-	if (el(i)%elem(1) == 16) then 
+	if (el(i)%elem(5) == 16) then 
 		phy(i)%rho = 0.125d0
 		phy(i)%e = 2.0d0
 	endif	
-	if (el(i)%elem(1) == 22) then 
+	if (el(i)%elem(5) == 22) then 
 		phy(i)%rho = 0.125d0
 		phy(i)%e = 2.0d0
 	endif	
-	if (el(i)%elem(1) == 20) then 
+	if (el(i)%elem(5) == 20) then 
 		phy(i)%rho = 0.125d0
 		phy(i)%e = 2.0d0
 	endif	

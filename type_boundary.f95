@@ -26,20 +26,8 @@ do i = 1,size(bou%var(:,1))
             case(5) !Reflection
                 call reflection(l,bou,node,phy,el,5)
         end select
-   
-         
     endif
 enddo
-
-! do i = 1,size(bou%var(:,1))
-!     l(:) = bou%var(i,:)
-!     k = bou%type_bound(l(1))
-!     if (k.ne.0) then
-! 		if (k == 1) call solid_wall(l,bou,node,phy,el,1)  
-! 		if (k == 2) call solid_wall(l,bou,node,phy,el,2) 
-! 		if (k == 3) call solid_wall(l,bou,node,phy,el,3)
-!     endif
-! enddo
 
 contains
 subroutine solid_wall(l,bou,node,phy,el,typ)
@@ -51,8 +39,8 @@ integer(4),intent(in) :: l(6),typ
 integer(4) i1,i2
 
 call posit(l(2),i1,i2)
-i1 = el(l(3))%elem(i1+1)                
-i2 = el(l(3))%elem(i2+1) 
+i1 = el(l(3))%elem(i1)                
+i2 = el(l(3))%elem(i2) 
 
 if (typ == 1) then !If boundary = 1 fix U and V	
     node(i1)%u = 0d0
@@ -106,12 +94,12 @@ el1 = l(3) !Set number cell_1
 el2 = l(5) !Set number cell_2
 
 call posit(l(2),i1(1),i2(1)) !Find index node for element
-i1(1) = el(l(3))%elem(i1(1)+1) !node_1 boundary cell_1                
-i2(1) = el(l(3))%elem(i2(1)+1) !node_2 boundary cell_1
+i1(1) = el(l(3))%elem(i1(1)) !node_1 boundary cell_1                
+i2(1) = el(l(3))%elem(i2(1)) !node_2 boundary cell_1
 
 call posit(l(4),i1(2),i2(2)) !Find index node for element
-i1(2) = el(l(3))%elem(i1(2)+1) !node_3 boundary cell_1                 
-i2(2) = el(l(3))%elem(i2(2)+1) !node_4 boundary cell_1   
+i1(2) = el(l(3))%elem(i1(2)) !node_3 boundary cell_1                 
+i2(2) = el(l(3))%elem(i2(2)) !node_4 boundary cell_1   
 
 if ((node(i1(1))%mark.ne.1).and.(node(i1(1))%mark.ne.2)) then
     node(i1(1))%u = node(i1(2))%u 
@@ -149,17 +137,16 @@ integer(4) i1(3),i2(3),el1,el2
 el1 = l(3)
 el2 = l(5)
 call posit(l(2),i1(1),i2(1))
-i1(1) = el(l(3))%elem(i1(1)+1)                
-i2(1) = el(l(3))%elem(i2(1)+1) 
+i1(1) = el(l(3))%elem(i1(1))                
+i2(1) = el(l(3))%elem(i2(1)) 
 
 call posit(l(4),i1(2),i2(2))
-i1(2) = el(l(3))%elem(i1(2)+1)                
-i2(2) = el(l(3))%elem(i2(2)+1) 
+i1(2) = el(l(3))%elem(i1(2))                
+i2(2) = el(l(3))%elem(i2(2)) 
 
 call posit(l(6),i1(3),i2(3)) !Find node in cell_2
-i1(3) = el(l(5))%elem(i1(3)+1) !Set number node_1 for cell_2                
-i2(3) = el(l(5))%elem(i2(3)+1) !Set number node_2 for cell_2
-
+i1(3) = el(l(5))%elem(i1(3)) !Set number node_1 for cell_2                
+i2(3) = el(l(5))%elem(i2(3)) !Set number node_2 for cell_2
 
 node(i1(2))%v = 0d0 !Set V-velocity zero
 node(i1(2))%v_l = 0d0

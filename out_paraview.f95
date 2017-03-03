@@ -57,7 +57,7 @@ write(1,*) '</CellData>'
 write(1,*) '<Cells>'
 write(1,*) '<DataArray type="Int32" Name="connectivity" Format="ascii">'
 do i = 1,size(phy(:))
-write(1,*) el(i)%elem(2)-1,el(i)%elem(3)-1,el(i)%elem(4)-1,el(i)%elem(5)-1
+write(1,*) el(i)%elem(1)-1,el(i)%elem(2)-1,el(i)%elem(3)-1,el(i)%elem(4)-1
 enddo
 write(1,*) '</DataArray>'
 write(1,*) '<DataArray type="Int32" Name="offsets" Format="ascii">'
