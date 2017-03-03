@@ -5,14 +5,14 @@ integer(4) cont(9) !Contact elements : el1 el2 el3 el4 side1 side2 side3 side4
 real(8) rad !radial
 end type elements
 
-
 type physics
 real(8) sig !Sign countours 
 real(8) vol !volume
 real(8) rho !density
 real(8) mas !massa
 real(8) p !preasure
-real(8) e !energy
+real(8) e !inner energy
+real(8) Etot !Total energy
 
 real(8) q !artvisc
 real(8) vol_old !old volume
