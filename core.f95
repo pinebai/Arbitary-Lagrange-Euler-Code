@@ -89,7 +89,7 @@ call phase0(el,node,phy,bou,numer) !Initial
 do while(t<t_end)
 	call phase1(dt,el,node,phy,numer)
 	call velocity(dt,el,node,phy,bou,numer)
-	call energy(dt,el,node,phy,numer)
+	call energy_fromm(dt,el,node,phy,numer)
 	call grid(dt,node,numer)
 	call advect(dt,el,node,phy,bou,numer)
 	t = t + dt
