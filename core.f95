@@ -75,15 +75,15 @@ el(:)%rad = 2d0 !Radial
 n = 12
 allocate(bou%type_bound(n))
 bou%type_bound = 0
-bou%type_bound(1) = 1 !Solid wall - fix all boundary velocity
-bou%type_bound(2) = 1
-bou%type_bound(3) = 1
-bou%type_bound(4) = 5 !Reflection
+bou%type_bound(1) = 4 !Solid wall - fix all boundary velocity
+bou%type_bound(2) = 4
+bou%type_bound(3) = 4
+bou%type_bound(4) = 1 !Reflection
 
 
 dt = 0.0001 !time interval
 t = 0d0 !inintial time
-t_end = 0.3d0 !End time calculation
+t_end = 0.5d0 !End time calculation
 
 call phase0(el,node,phy,bou,numer) !Initial 
 do while(t<t_end)
