@@ -32,7 +32,7 @@ real(8) u_l,v_l !old velocity
 real(8) mas_v !vertex mass in node
 real(8) mas_til_v !vertex mass in node for advect
 real(8) num_cont !number cell near node
-integer(4) mark
+integer(4) mark !marker nodes for boundary
 end type nodes
 
 type numerical 
