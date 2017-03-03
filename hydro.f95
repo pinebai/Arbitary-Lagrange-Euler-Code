@@ -122,65 +122,104 @@ type(nodes),intent(inout) :: node(:)
 type(physics),intent(inout) :: phy(:)
 type(numerical),intent(inout) :: numer
 real(8),intent(in) :: dt
-integer(4) i,j,k,l,im,ip
-real(8) sig,du,dv
-
+integer(4) i,j,k,l,im,ip,ia
+real(8) acc_z,acc_r,rad_com(2)
+real(8) an,ksi
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!Relaxation grid
+!This cycle for calculation realxation lagrange grid (See SALE)
+!an and ksi - var parameters
+!See more comments in  call posit(...)
+an = 0.005d0
+ksi = 0.3d0
 do i = 1,size(phy(:)) !
 	do j = 1,4 !Cycle for all nodes cell
 		l = el(i)%elem(j+1) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
-		call posit(i,j,phy,el,im,ip,sig) !Function calculation position + (ip) and - (im)
-		du = 0.5d0*sig*dt*(phy(i)%p+phy(i)%q)*(node(ip)%r-node(im)%r)/node(l)%mas_v
-		dv = 0.5d0*sig*dt*(phy(i)%p+phy(i)%q)*(node(im)%z-node(ip)%z)/node(l)%mas_v
+		call posit(i,j,phy,el,im,ip,ia) !Function calculation position + (ip) and - (im)			
+node(l)%u = node(l)%u + 0.25d0*an*(0.5d0*(1d0+ksi)*(node(ip)%u_l+node(im)%u_l)-ksi*node(ia)%u_l-node(l)%u_l)
+node(l)%v = node(l)%v + 0.25d0*an*(0.5d0*(1d0+ksi)*(node(ip)%v_l+node(im)%v_l)-ksi*node(ia)%v_l-node(l)%v_l)
+	enddo	
+enddo	
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+do i = 1,size(phy(:)) !
+	do j = 1,4 !Cycle for all nodes cell
+		l = el(i)%elem(j+1) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
+		call posit(i,j,phy,el,im,ip,ia) !Function calculation position 
 		
-		du = du*(0.5d0*(node(ip)%r+node(im)%r))**(el(i)%rad-1d0) 
-		dv = dv*(node(l)%r)**(el(i)%rad-1d0)
+		rad_com(1) = (0.5d0*(node(ip)%r+node(im)%r))**(el(i)%rad-1d0) !Radial component for z
+		rad_com(2) = node(l)%r**(el(i)%rad-1d0)						  !Radial component for r
+		
+		acc_z = 0.5d0*phy(i)%sig*rad_com(1)*(phy(i)%p+phy(i)%q)*(node(ip)%r-node(im)%r)/node(l)%mas_v !Caluclation z-component acceleration 
+		acc_r = 0.5d0*phy(i)%sig*rad_com(2)*(phy(i)%p+phy(i)%q)*(node(im)%z-node(ip)%z)/node(l)%mas_v !Caluclation r-component acceleration
 			
-		node(l)%u = node(l)%u - du
-		node(l)%v = node(l)%v - dv
+		node(l)%u = node(l)%u - acc_z*dt !Caluclation z-component velocity 
+		node(l)%v = node(l)%v - acc_r*dt !Caluclation r-component velocity 
 	enddo	
 enddo	
 
 end subroutine velocity 
 
-subroutine posit(i,j,phy,el,im,ip,sig)
+subroutine posit(i,j,phy,el,im,ip,ia)
 type(elements),intent(inout) :: el(:)
 type(physics),intent(inout) :: phy(:)
 integer(4),intent(in) :: i,j
-integer(4),intent(out) :: im,ip
-real(8),intent(out) :: sig
-
+integer(4),intent(out) :: im,ip,ia
+integer(4) l 
+l = 1
 select case(j)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!This countur for node (o)
+!im,ip - adjacent nodes
+!ia - oposite node
+!sig - direction rotation
+!
+! n-----ip----ia 
+! |   / | ^   |
+! |	 /  |  \  |
+! |	v   |	\ |
+! n----(o)----im 
+! | \   |   ^ |
+! |	 \  |  /  |
+! |	  v | /   |
+! n-----n-----n
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	case(1) !Node 1
-! 3+1------2+1   ^--->
-! |		   |     |   |
-! 4+1-----(1+1)	 ^-- v	 	  	
-		im = el(i)%elem(5)    
-		ip = el(i)%elem(3)
-		sig = -phy(i)%sig  !left round
-
+! 3-----2 
+! |   / |
+! |	 /  |
+! |	v   |
+! 4----(1)			 	  	
+		im = el(i)%elem(l+2)    
+		ip = el(i)%elem(l+4) 
+		ia = el(i)%elem(l+3)
 	case(2) !Node 2
-! 3+1----(2+1)   ^--->
-! |			|	 |   |   
-! 4+1-----1+1	 ^-- v	 
-		im = el(i)%elem(2)
-		ip = el(i)%elem(4)
-		sig = -phy(i)%sig !left round
-
+! 3----(2) 
+! | \   |
+! |	 \  |
+! |	  v |
+! 4-----1		 
+		im = el(i)%elem(l+3)
+		ip = el(i)%elem(l+1)
+		ia = el(i)%elem(l+4)
 	case(3) !Node 3
-! (3+1)----2+1   <---^
-! |			|	 |   |   
-! 4+1-----1+1	 v---^  		
-		im = el(i)%elem(5)
-		ip = el(i)%elem(3)
-		sig = phy(i)%sig !right round
-
+!(3)----2 
+! |   ^ |
+! |	 /  |
+! |	/   |
+! 4-----1 		
+		im = el(i)%elem(l+4)
+		ip = el(i)%elem(l+2)
+		ia = el(i)%elem(l+1)
 	case(4) !Node 4
-! 3+1-----2+1    <---^
-! |       |      |   |   
-!(4+1)----1+1	 v---^  				
-		im = el(i)%elem(2)
-		ip = el(i)%elem(4)
-		sig = phy(i)%sig !right round
+! 3-----2 
+! | ^   |
+! |	 \  |
+! |	  \ |
+!(4)----1				
+		im = el(i)%elem(l+1)
+		ip = el(i)%elem(l+3)
+		ia = el(i)%elem(l+2)
 end select	
 end subroutine posit
 

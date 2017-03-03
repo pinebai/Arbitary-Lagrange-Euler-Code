@@ -47,8 +47,8 @@ allocate(phy(n_cell)) !allocate physical
 !Initial conditions
 do i = 1,n_cell
 	if (el(i)%elem(1) == 18) then !Number mat - see in GMSH
-		phy(i)%rho =  0.1d0
-		phy(i)%e = 1d0
+		phy(i)%rho =  1.0d0
+		phy(i)%e = 2.5d0
 	endif
 	if (el(i)%elem(1) == 14) then 
 		phy(i)%rho = 0.125d0
