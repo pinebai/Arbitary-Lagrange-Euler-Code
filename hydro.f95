@@ -378,7 +378,6 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 			!  7-------8-------9	
 			! (MU)^(n+1) = (MU)^(n)/count + 1/4dUM  	
 			! where "count" - is sum cell near node
-			!
 
 			node(l)%u = node(l)%u + 0.25d0*phy(i)%dum/node(l)%mas_til_v + node(l)%mas_v*node(l)%u_l/node(l)%num_cont/node(l)%mas_til_v
 			node(l)%v = node(l)%v + 0.25d0*phy(i)%dvm/node(l)%mas_til_v + node(l)%mas_v*node(l)%v_l/node(l)%num_cont/node(l)%mas_til_v
@@ -408,5 +407,30 @@ abl = abl*((r(1)+r(3)+r(4))/3d0)**(rad-1d0)
 volume_adv = abl+atr
 end function volume_adv
 end subroutine advect
+
+
+subroutine difference(i,dudz,dudr,dvdz,dvdr,el,node)
+type(elements),intent(inout) :: el(:)
+type(nodes),intent(inout) :: node(:)
+integer(4),intent(in) :: i
+real(8),intent(out) :: dudz,dudr,dvdz,dvdr
+real(8) area
+integer(4) l(4)
+
+l(1) = el(i)%elem(2) 
+l(2) = el(i)%elem(3)
+l(3) = el(i)%elem(4)
+l(4) = el(i)%elem(5)
+
+area = (node(l(2))%z-node(l(4))%z)*(node(l(3))%r-node(l(1))%r)-(node(l(1))%z-node(l(3))%z)*(node(l(4))%r-node(l(2))%r) !Calculation Area
+
+dudz = (node(l(2))%u-node(l(4))%u)*(node(l(3))%r-node(l(1))%r)-(node(l(1))%u-node(l(3))%u)*(node(l(4))%r-node(l(2))%r)/area !Calculation dudz
+dudr = (node(l(3))%u-node(l(1))%u)*(node(l(2))%r-node(l(4))%r)-(node(l(2))%u-node(l(4))%u)*(node(l(3))%r-node(l(1))%r)/area!+& !Calculation dudr
+!(el(i)%rad-1d0)*(node(l(1))%u+node(l(2))%u+node(l(3))%u+node(l(4))%u)/(node(l(1))%r+node(l(2))%r+node(l(3))%r+node(l(4))%r)
+
+dvdz = (node(l(2))%v-node(l(4))%v)*(node(l(3))%r-node(l(1))%r)-(node(l(1))%v-node(l(3))%v)*(node(l(4))%r-node(l(2))%r)/area !Calculation dvdz
+dvdr = (node(l(3))%v-node(l(1))%v)*(node(l(2))%r-node(l(4))%r)-(node(l(2))%v-node(l(4))%v)*(node(l(3))%r-node(l(1))%r)/area!+& !Calculation dvdr
+!(el(i)%rad-1d0)*(node(l(1))%u+node(l(2))%u+node(l(3))%u+node(l(4))%u)/(node(l(1))%r+node(l(2))%r+node(l(3))%r+node(l(4))%r)
+end subroutine difference
 
 end module hydro
