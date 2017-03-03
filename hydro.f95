@@ -1,8 +1,9 @@
 module hydro
 use object
+use eos
 contains
 
-subroutine volume0(el,node,phy,numer,bou)
+subroutine phase0(el,node,phy,numer,bou)
 type(elements),intent(inout) :: el(:)
 type(nodes),intent(inout) :: node(:)
 type(physics),intent(inout) :: phy(:)
@@ -13,7 +14,6 @@ real(8) atr,abl
 
 node(:)%mas_v = 0d0
 node(:)%num_cont = 0d0
-
 
 !do i = 1,size(bou%var(:,1))
 !    l(1:3) = bou%var(i,1:3)
@@ -41,18 +41,17 @@ do i = 1,size(phy(:)%vol)
 !Calculation triangles left and right in cell 
 	atr = 0.5d0*((node(l(3))%z-node(l(2))%z)*(node(l(1))%r-node(l(2))%r)-(node(l(1))%z-node(l(2))%z)*(node(l(3))%r-node(l(2))%r)) !0.5*((x3-x2)*(y1-y2)-(x1-x2)*(y3-y2))
 	abl = 0.5d0*((node(l(1))%z-node(l(4))%z)*(node(l(3))%r-node(l(4))%r)-(node(l(3))%z-node(l(4))%z)*(node(l(1))%r-node(l(4))%r)) !0.5*((x1-x4)*(y3-y4)-(x3-x4)*(y1-y4))
-	
-	
  
 	atr = atr*((node(l(1))%r+node(l(2))%r+node(l(3))%r)/3d0)**(el(i)%rad-1d0)
 	abl = abl*((node(l(1))%r+node(l(3))%r+node(l(4))%r)/3d0)**(el(i)%rad-1d0)
-	
 	
 	phy(i)%sig = sign(1d0,abl+atr) !Sign volume (Very important)
 	phy(i)%vol = abs(abl)+abs(atr) !Calculaion volume cell
 	
 	phy(i)%vol_old = phy(i)%vol !Set first old volume 
 	phy(i)%mas = phy(i)%rho*phy(i)%vol ! Calculation massa in cell
+	
+	call gas(i,phy)
 
 !Set old velocity
 	node(l(1))%u_l = node(l(1))%u 
@@ -70,21 +69,26 @@ do i = 1,size(phy(:)%vol)
 		node(l(j))%mas_v = node(l(j))%mas_v + 0.25d0*phy(i)%mas
 		node(l(j))%num_cont = node(l(j))%num_cont + 1d0
 	enddo
-
-
 enddo
-end subroutine volume0
+end subroutine phase0
 
 
-subroutine volume(el,node,phy,numer)
+subroutine phase1(dt,el,node,phy,numer)
 type(elements),intent(inout) :: el(:)
 type(nodes),intent(inout) :: node(:)
 type(physics),intent(inout) :: phy(:)
 type(numerical),intent(inout) :: numer
+real(8),intent(in) :: dt
 integer(4) i,l(4)
 real(8) atr, abl
+real(8) Dvol
+
 
 do i = 1,size(phy(:)%vol)
+	!Calculation EOS
+	call gas(i,phy)
+	
+	!Calculation volume,mass and density
 	!first material then shift to 1
 	l(1) = el(i)%elem(2) 
 	l(2) = el(i)%elem(3)
@@ -96,13 +100,20 @@ do i = 1,size(phy(:)%vol)
 
 	atr = atr*((node(l(1))%r+node(l(2))%r+node(l(3))%r)/3d0)**(el(i)%rad-1d0)
 	abl = abl*((node(l(1))%r+node(l(3))%r+node(l(4))%r)/3d0)**(el(i)%rad-1d0)
-
+	
 	phy(i)%vol_old = phy(i)%vol !Set old volume 
 	phy(i)%vol = abs(abl)+abs(atr) !Calcualtion new volume 
 	phy(i)%rho = phy(i)%mas/phy(i)%vol !Calculation density
 	phy(i)%mas = phy(i)%rho*phy(i)%vol !Calculation massa
+	
+	!Calculation artvisc
+	Dvol = 2d0*(phy(i)%vol - phy(i)%vol_old)/(phy(i)%vol + phy(i)%vol_old)/dt !Calculation Divergence (Equivalen Hemp3D)
+	phy(i)%q = min(0d0,Dvol)*(numer%art*phy(i)%rho*Dvol*phy(i)%Vol**0.666) !Calculation Divergence (Equivalen Hemp3D)	
+	
 enddo
-end subroutine volume
+
+
+end subroutine phase1
 
 
 subroutine velocity(dt,el,node,phy,numer)
@@ -397,24 +408,5 @@ abl = abl*((r(1)+r(3)+r(4))/3d0)**(rad-1d0)
 volume_adv = abl+atr
 end function volume_adv
 end subroutine advect
-
-
-
-
-subroutine artvisc(dt,node,phy,numer)
-type(nodes),intent(inout) :: node(:)
-type(physics),intent(inout) :: phy(:)
-type(numerical),intent(inout) :: numer
-real(8),intent(in) :: dt
-integer(4) i
-real(8) Dvol
-
-do i = 1,size(phy(:)%vol)
-	Dvol = 2d0*(phy(i)%vol - phy(i)%vol_old)/(phy(i)%vol + phy(i)%vol_old)/dt !Calculation Divergence (Equivalen Hemp3D)
-	phy(i)%q = min(0d0,Dvol)*(numer%art*phy(i)%rho*Dvol*phy(i)%Vol**0.666) !Calculation Divergence (Equivalen Hemp3D)
-enddo
-end subroutine artvisc
-
-
 
 end module hydro

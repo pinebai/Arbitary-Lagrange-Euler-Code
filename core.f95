@@ -81,28 +81,20 @@ bou%type_bound(2) = 1
 bou%type_bound(3) = 1
 bou%type_bound(4) = 5 !Reflection
 
-node(:)%u = 0d0 !
-node(:)%v = 0d0 !
-node(:)%u_l = 0d0 !
-node(:)%v_l = 0d0 !
 
 dt = 0.0001 !time interval
 t = 0d0 !inintial time
 t_end = 0.2d0 !End time calculation
 
-call volume0(el,node,phy,numer,bou) !Initial 
-call gas(phy) !initial 
-
+call phase0(el,node,phy,numer,bou) !Initial 
 do while(t<t_end)
-call volume(el,node,phy,numer)
-call artvisc(dt,node,phy,numer)
+call phase1(dt,el,node,phy,numer)
 call velocity(dt,el,node,phy,numer)
 call boundary_flow(bou,node,phy,el)
 call energy(dt,el,node,phy,numer)
 call grid(dt,node,numer)
 call advect(dt,el,node,phy,numer)
 call boundary_flow(bou,node,phy,el)
-call gas(phy)
 t = t + dt
 enddo
 
