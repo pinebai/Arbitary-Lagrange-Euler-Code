@@ -42,7 +42,7 @@ end type numerical
 
 type boundary
 integer(4),allocatable :: num_bound(:),type_bound(:) !Number bound and type_bound (1- fix, 2- fix U- component, 3- fix V-component)
-integer(4),allocatable :: var(:,:) !var(:,1) - number boundary, var(:,2) - first node, var(:,3) - second node   
+integer(4),allocatable :: var(:,:) !var(:,1) - number boundary, var(:,2) - first node, var(:,3) - second node  
 end type boundary
 
 end module object

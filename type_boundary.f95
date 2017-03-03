@@ -26,8 +26,21 @@ do i = 1,size(bou%var(:,1))
             case(5) !Reflection
                 call reflection(l,bou,node,phy,el,5)
         end select
+   
+         
     endif
 enddo
+
+do i = 1,size(bou%var(:,1))
+    l(:) = bou%var(i,:)
+    k = bou%type_bound(l(1))
+    if (k.ne.0) then
+		if (k == 1) call solid_wall(l,bou,node,phy,el,1)  
+		if (k == 2) call solid_wall(l,bou,node,phy,el,2) 
+		if (k == 3) call solid_wall(l,bou,node,phy,el,3)
+    endif
+enddo
+
 contains
 subroutine solid_wall(l,bou,node,phy,el,typ)
 type(boundary),intent(inout) :: bou
@@ -119,7 +132,6 @@ integer(4) i1(3),i2(3),el1,el2
 
 el1 = l(3)
 el2 = l(5)
-
 call posit(l(2),i1(1),i2(1))
 i1(1) = el(l(3))%elem(i1(1)+1)                
 i2(1) = el(l(3))%elem(i2(1)+1) 

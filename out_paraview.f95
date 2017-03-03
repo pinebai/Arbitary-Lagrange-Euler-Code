@@ -67,7 +67,7 @@ enddo
 write(1,*) '</DataArray>'
 write(1,*) '<DataArray type="Int32" Name="types" Format="ascii">'
 do i = 1,size(phy(:))
-write(1,*) '5'  
+write(1,*) '9'  
 enddo
 write(1,*) '</DataArray>'
 write(1,*) '</Cells>'

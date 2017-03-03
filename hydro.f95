@@ -1,14 +1,15 @@
 module hydro
 use object
 use eos
+use type_boundary
 contains
 
-subroutine phase0(el,node,phy,numer,bou)
+subroutine phase0(el,node,phy,bou,numer)
 type(elements),intent(inout) :: el(:)
 type(nodes),intent(inout) :: node(:)
 type(physics),intent(inout) :: phy(:)
-type(numerical),intent(inout) :: numer
 type(boundary),intent(inout) :: bou
+type(numerical),intent(inout) :: numer
 integer(4) i,j,l(4)
 real(8) atr,abl
 
@@ -18,7 +19,6 @@ node(:)%num_cont = 0d0
 !do i = 1,size(bou%var(:,1))
 !    l(1:3) = bou%var(i,1:3)
 !	if (bou%type_bound(l(1)) == 5) el(l(3))%rad = 1d0
-
 !enddo
 
 do i = 1,size(phy(:)%vol)
@@ -70,6 +70,7 @@ do i = 1,size(phy(:)%vol)
 		node(l(j))%num_cont = node(l(j))%num_cont + 1d0
 	enddo
 enddo
+call boundary_flow(bou,node,phy,el)
 end subroutine phase0
 
 
@@ -82,7 +83,6 @@ real(8),intent(in) :: dt
 integer(4) i,l(4)
 real(8) atr, abl
 real(8) Dvol
-
 
 do i = 1,size(phy(:)%vol)
 	!Calculation EOS
@@ -111,15 +111,14 @@ do i = 1,size(phy(:)%vol)
 	phy(i)%q = min(0d0,Dvol)*(numer%art*phy(i)%rho*Dvol*phy(i)%Vol**0.666) !Calculation Divergence (Equivalen Hemp3D)	
 	
 enddo
-
-
 end subroutine phase1
 
 
-subroutine velocity(dt,el,node,phy,numer)
+subroutine velocity(dt,el,node,phy,bou,numer)
 type(elements),intent(inout) :: el(:)
 type(nodes),intent(inout) :: node(:)
 type(physics),intent(inout) :: phy(:)
+type (boundary),intent(inout) :: bou
 type(numerical),intent(inout) :: numer
 real(8),intent(in) :: dt
 integer(4) i,j,k,l,im,ip,ia
@@ -139,7 +138,10 @@ do i = 1,size(phy(:)) !
 node(l)%u = node(l)%u + 0.25d0*an*(0.5d0*(1d0+ksi)*(node(ip)%u_l+node(im)%u_l)-ksi*node(ia)%u_l-node(l)%u_l)
 node(l)%v = node(l)%v + 0.25d0*an*(0.5d0*(1d0+ksi)*(node(ip)%v_l+node(im)%v_l)-ksi*node(ia)%v_l-node(l)%v_l)
 	enddo	
-enddo	
+enddo
+
+call boundary_flow(bou,node,phy,el)	
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 do i = 1,size(phy(:)) !
 	do j = 1,4 !Cycle for all nodes cell
@@ -157,7 +159,8 @@ do i = 1,size(phy(:)) !
 	enddo	
 enddo	
 
-end subroutine velocity 
+call boundary_flow(bou,node,phy,el)	
+contains
 
 subroutine posit(i,j,phy,el,im,ip,ia)
 type(elements),intent(inout) :: el(:)
@@ -222,6 +225,8 @@ select case(j)
 		ia = el(i)%elem(l+2)
 end select	
 end subroutine posit
+end subroutine velocity 
+
 
 
 subroutine energy(dt,el,node,phy,numer)
@@ -275,10 +280,11 @@ enddo
 end subroutine grid
 
 
-subroutine advect(dt,el,node,phy,numer) !Subroutine calculation advection
+subroutine advect(dt,el,node,phy,bou,numer) !Subroutine calculation advection
 type(elements),intent(inout) :: el(:)
 type(nodes),intent(inout) :: node(:)
 type(physics),intent(inout) :: phy(:)
+type (boundary),intent(inout) :: bou
 type(numerical),intent(inout) :: numer
 real(8),intent(in) :: dt
 integer(4) i,j,k,l,ii,kl
@@ -427,6 +433,7 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 		phy(i)%mas = phy(i)%mas_til
 		phy(i)%e = phy(i)%Me_til/phy(i)%mas_til
 	enddo
+	call boundary_flow(bou,node,phy,el)		
 endif
 
 node(:)%u_l = node(:)%u

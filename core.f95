@@ -68,9 +68,8 @@ do i = 1,n_cell
 	endif	
 enddo	
 numer%art = 0.1d0 !Artification viscosity
-numer%grid = 1.0d0 !Grid proportional velocity
+numer%grid = 0.0d0 !Grid proportional velocity
 numer%a0 = 1d0 ! a0 for Euler stability
-
 el(:)%rad = 2d0 !Radial
 
 n = 12
@@ -84,18 +83,16 @@ bou%type_bound(4) = 5 !Reflection
 
 dt = 0.0001 !time interval
 t = 0d0 !inintial time
-t_end = 0.2d0 !End time calculation
+t_end = 0.3d0 !End time calculation
 
-call phase0(el,node,phy,numer,bou) !Initial 
+call phase0(el,node,phy,bou,numer) !Initial 
 do while(t<t_end)
-call phase1(dt,el,node,phy,numer)
-call velocity(dt,el,node,phy,numer)
-call boundary_flow(bou,node,phy,el)
-call energy(dt,el,node,phy,numer)
-call grid(dt,node,numer)
-call advect(dt,el,node,phy,numer)
-call boundary_flow(bou,node,phy,el)
-t = t + dt
+	call phase1(dt,el,node,phy,numer)
+	call velocity(dt,el,node,phy,bou,numer)
+	call energy(dt,el,node,phy,numer)
+	call grid(dt,node,numer)
+	call advect(dt,el,node,phy,bou,numer)
+	t = t + dt
 enddo
 
 call out(t,el,node,phy)
