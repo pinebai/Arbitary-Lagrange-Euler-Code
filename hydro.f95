@@ -248,9 +248,8 @@ do i = 1,size(phy(:))
 		v_til(j) = 0.5d0*(node(l)%v+node(l)%v_l) ! V_til = 1/2(V+V_old) - intermediate velocity (See SALE2D or Samarsky)
 		z_til(j) = node(l)%z + u_til(j)*dt !Calculation new intermediate z-position for define intermediate Volume
 		r_til(j) = node(l)%r + v_til(j)*dt !Calculation new intermediate r-position for define intermediate Volume
-			
 		phy(i)%um = phy(i)%um + 0.25d0*node(l)%u !Calculation cell-centered velocity U
-		phy(i)%vm = phy(i)%vm + 0.25d0*node(l)%v !Calculation cell-centered velocity V			
+		phy(i)%vm = phy(i)%vm + 0.25d0*node(l)%v !Calculation cell-centered velocity V
 	enddo
 
 	atr = 0.5d0*((z_til(3)-z_til(2))*(r_til(1)-r_til(2))-(z_til(1)-z_til(2))*(r_til(3)-r_til(2))) !(right triangle) (also as Volume in subroutine Volume) 
@@ -259,12 +258,72 @@ do i = 1,size(phy(:))
 	atr = atr*((r_til(1)+r_til(2)+r_til(3))/3d0)**(el(i)%rad-1d0)
 	abl = abl*((r_til(1)+r_til(3)+r_til(4))/3d0)**(el(i)%rad-1d0)
 	
-	
 	vol_til = abs(abl)+abs(atr) !intermedia Volume
 	phy(i)%e = phy(i)%e-(phy(i)%p+phy(i)%q)*(vol_til-phy(i)%vol)/phy(i)%mas !Calculation inner energy (See SALE2D or Samarsky)
+	phy(i)%etot = phy(i)%e + 0.5d0*(phy(i)%um*phy(i)%um+phy(i)%vm*phy(i)%vm)!Calculation Total energy 
 enddo
 end subroutine energy
 
+subroutine energy_fromm(dt,el,node,phy,numer)
+type(elements),intent(inout) :: el(:)
+type(nodes),intent(inout) :: node(:)
+type(physics),intent(inout) :: phy(:)
+type(numerical),intent(inout) :: numer
+real(8),intent(in) :: dt
+integer(4) i,j,k(4),ii,kl,l
+real(8) atr,abl,u_til,v_til,Pij,side
+
+kl = 1
+
+phy(:)%um = 0d0 !Set zero cell velocity U-component
+phy(:)%vm = 0d0 !Set zero cell velocity V-component
+
+do i = 1,size(phy(:))
+    u_til = 0d0
+    v_til = 0d0
+	do j = 1,4 !Cycle for all nodes cell
+		l = el(i)%elem(kl+j) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
+        k(j) = l
+		phy(i)%um = phy(i)%um + 0.25d0*node(l)%u !Calculation cell-centered velocity U
+		phy(i)%vm = phy(i)%vm + 0.25d0*node(l)%v !Calculation cell-centered velocity V
+		u_til = u_til+0.25d0*node(l)%u_l
+		v_til = v_til+0.25d0*node(l)%v_l
+	enddo
+    phy(i)%etot = phy(i)%e+0.5d0*(u_til*u_til+v_til*v_til)
+    
+    do j = 1,el(i)%cont(9) !Cycle for all contact elements in el(:)%cont
+		ii = el(i)%cont(j) !Number contact element 
+		pij = ((phy(i)%p+phy(i)%q)*phy(ii)%mas+phy(i)%mas*(phy(ii)%p+phy(ii)%q))/(phy(ii)%mas+phy(i)%mas) !Weight mass-preassure 
+		!    ------2------
+		!           \
+		!      P1,M1 \ P2,M2    Pij = (M1*P2+M2*P1)/(M1+M2)
+		!             \
+		!        ------1------
+		select case(el(i)%cont(j+4)) !Define number side contact
+			!      2
+			!      |
+			! 	3----2   
+			! 3-|    |-1	 
+			! 	4----1
+			!	   |
+			!      4
+			case(1) !Right side
+                side = 0.5*((node(k(2))%u+node(k(1))%u)*(node(k(2))%r-node(k(1))%r)-&
+(node(k(2))%v+node(k(1))%v)*(node(k(2))%z-node(k(1))%z))*(0.5d0*(node(k(2))%r+node(k(1))%r))**((el(i)%rad-1d0)) 
+			case(2) !Top side
+                side = 0.5*((node(k(3))%u+node(k(2))%u)*(node(k(3))%r-node(k(2))%r)-&
+(node(k(3))%v+node(k(2))%v)*(node(k(3))%z-node(k(2))%z))*(0.5d0*(node(k(3))%r+node(k(2))%r))**((el(i)%rad-1d0)) 
+			case(3) !Left sid
+                side = 0.5*((node(k(4))%u+node(k(3))%u)*(node(k(4))%r-node(k(3))%r)-&
+(node(k(4))%v+node(k(3))%v)*(node(k(4))%z-node(k(3))%z))*(0.5d0*(node(k(4))%r+node(k(3))%r))**((el(i)%rad-1d0)) 
+			case(4) !Bottom side
+                side = 0.5*((node(k(1))%u+node(k(4))%u)*(node(k(1))%r-node(k(4))%r)-&
+(node(k(1))%v+node(k(4))%v)*(node(k(1))%z-node(k(4))%z))*(0.5d0*(node(k(1))%r+node(k(4))%r))**((el(i)%rad-1d0))                   
+         end select
+         phy(i)%etot = phy(i)%etot-dt/phy(i)%mas*pij*(phy(i)%sig*side) !Calculation Total energy
+     enddo    
+enddo
+end subroutine energy_fromm
 
 subroutine grid(dt,node,numer) 
 type(nodes),intent(inout) :: node(:)
@@ -296,7 +355,7 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 		phy(i)%dum = 0d0 !Set zero flux U -momentum 
 		phy(i)%dvm = 0d0 !Set zero flux V -momentum 
 		phy(i)%mas_til = phy(i)%mas !Set intermedia mass equivalent mass
-		phy(i)%Me_til = phy(i)%mas*phy(i)%e !Set intermedia Mass*energy (inner energy)
+		phy(i)%Me_til = phy(i)%mas*phy(i)%etot !Set intermedia Mass*energy (Total energy)
 
 		! el(i)%cont(j)  (contact_1 contact_2 contact_3 contact_4 side_1 side_2 side_3 side_4) 
 
@@ -386,10 +445,10 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 		
 			FV = -phy(i)%sig*volume_adv(z_p,r_p,el(i)%rad) !Calculation volume cell-shift
 			a_V = numer%a0*sign(1d0,Fv) !For stability a0 = 1d0 - change variable (0 - unstable 1- more diffuse, using 0 - 1)  
-			phy(i)%mas_til = phy(i)%mas_til+ 0.5d0*Fv*((1d0+a_V)*phy(ii)%rho+(1d0-a_V)*phy(i)%rho) !Calculation mass  Fv(0.5[rho_ii+rho_i]) - See Fletcher (vol. 1) or SALE2D
+			phy(i)%mas_til = phy(i)%mas_til+ 0.5d0*Fv*((1d0+a_V)*phy(ii)%rho+(1d0-a_V)*phy(i)%rho) !Calculation mass  Fv(0.5[rho_ii+rho_i]) - See Fletcher (vol. 1) or SALE2D (YAQUII)
 			phy(i)%dum = phy(i)%dum + 0.5d0*Fv*((1d0+a_V)*phy(ii)%rho*phy(ii)%Um+(1d0-a_V)*phy(i)%rho*phy(i)%Um) !flux U -momentum 
 			phy(i)%dvm = phy(i)%dvm + 0.5d0*Fv*((1d0+a_V)*phy(ii)%rho*phy(ii)%Vm+(1d0-a_V)*phy(i)%rho*phy(i)%Vm) !flux V -momentum 
-			phy(i)%Me_til = phy(i)%Me_til + 0.5d0*Fv*((1d0+a_V)*phy(ii)%rho*phy(ii)%e+(1d0-a_V)*phy(i)%rho*phy(i)%e) !Mass*Energy 
+			phy(i)%Me_til = phy(i)%Me_til + 0.5d0*Fv*((1d0+a_V)*phy(ii)%rho*phy(ii)%etot+(1d0-a_V)*phy(i)%rho*phy(i)%etot) !Mass*Energy 
 		
 		enddo ext
 	enddo	
@@ -431,13 +490,27 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 	node(:)%mas_v = node(:)%mas_til_v
 	do i = 1,size(phy(:)%vol)
 		phy(i)%mas = phy(i)%mas_til
-		phy(i)%e = phy(i)%Me_til/phy(i)%mas_til
+		phy(i)%etot = phy(i)%Me_til/phy(i)%mas_til
 	enddo
-	call boundary_flow(bou,node,phy,el)		
+	call boundary_flow(bou,node,phy,el)
 endif
 
 node(:)%u_l = node(:)%u
 node(:)%v_l = node(:)%v
+
+
+phy(:)%um = 0d0
+phy(:)%vm = 0d0
+!Calculation inner energy from new total energy
+do i = 1,size(phy(:)%vol)
+    us = 0
+	do j = 1,4 !Cycle for all nodes in cell
+		l = el(i)%elem(j+1) !Number node
+        phy(i)%um = phy(i)%um + 0.25d0*node(l)%u !Calculation cell-centered velocity U
+		phy(i)%vm = phy(i)%vm + 0.25d0*node(l)%v !Calculation cell-centered velocity V
+	enddo	
+    phy(i)%e = phy(i)%etot - 0.5d0*(phy(i)%um*phy(i)%um+phy(i)%vm*phy(i)%vm)
+enddo
 
 contains
 real(8) function volume_adv(z,r,rad)
