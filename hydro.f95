@@ -15,7 +15,7 @@ real(8) atr,abl
 
 node(:)%mas_v = 0d0
 node(:)%num_cont = 0d0
-
+node(:)%mark = 0
 !do i = 1,size(bou%var(:,1))
 !    l(1:3) = bou%var(i,1:3)
 !	if (bou%type_bound(l(1)) == 5) el(l(3))%rad = 1d0
