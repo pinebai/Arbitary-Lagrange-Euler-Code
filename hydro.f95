@@ -15,7 +15,6 @@ integer(4) i,j,l(4)
 real(8) atr,abl
 
 node(:)%mas_v = 0d0
-node(:)%num_cont = 0d0
 node(:)%mark = 0
 
 do i = 1,size(cell(:)%vol)
@@ -64,10 +63,9 @@ do i = 1,size(cell(:)%vol)
 	node(l(3))%v_l = node(l(3))%v
 	node(l(4))%v_l = node(l(4))%v
 
-!Calculation vertex mass and number cell near node
+!Calculation vertex mass 
 	do j = 1,4 !cycle for all nodes in current cell 
 		node(l(j))%mas_v = node(l(j))%mas_v + 0.25d0*cell(i)%mas
-		node(l(j))%num_cont = node(l(j))%num_cont + 1d0
 	enddo
 enddo
 call boundary_flow(bou,node,cell,el)
@@ -376,9 +374,11 @@ real(8) z_p(4),r_p(4),vol,FV,a_V
 
 if (numer%grid<1) then !if numer%grid = 1 then bypassed this block 
 	node(:)%mas_til_v = 0d0
+	
+	node(:)%mas_til_vu = node(:)%mas_v*node(:)%u
+	node(:)%mas_til_vv = node(:)%mas_v*node(:)%v
+	
 	do i = 1,size(cell(:)%vol)
-		cell(i)%dum = 0d0 !Set zero flux U -momentum 
-		cell(i)%dvm = 0d0 !Set zero flux V -momentum 
 		cell(i)%mas_til = cell(i)%mas !Set intermedia mass equivalent mass
 		cell(i)%Me_til = cell(i)%mas*cell(i)%etot !Set intermedia Mass*energy (Total energy)
 
@@ -471,10 +471,24 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 			FV = -cell(i)%sig*volume_adv(z_p,r_p,el(i)%rad) !Calculation volume cell-shift
 			a_V = numer%a0*sign(1d0,Fv) !For stability a0 = 1d0 - change variable (0 - unstable 1- more diffuse, using 0 - 1)  
 			cell(i)%mas_til = cell(i)%mas_til+ 0.5d0*Fv*((1d0+a_V)*cell(ii)%rho+(1d0-a_V)*cell(i)%rho) !Calculation mass  Fv(0.5[rho_ii+rho_i]) - See Fletcher (vol. 1) or SALE2D (YAQUII)
-			cell(i)%dum = cell(i)%dum + 0.5d0*Fv*((1d0+a_V)*cell(ii)%rho*cell(ii)%Um+(1d0-a_V)*cell(i)%rho*cell(i)%Um) !flux U -momentum 
-			cell(i)%dvm = cell(i)%dvm + 0.5d0*Fv*((1d0+a_V)*cell(ii)%rho*cell(ii)%Vm+(1d0-a_V)*cell(i)%rho*cell(i)%Vm) !flux V -momentum 
 			cell(i)%Me_til = cell(i)%Me_til + 0.5d0*Fv*((1d0+a_V)*cell(ii)%rho*cell(ii)%etot+(1d0-a_V)*cell(i)%rho*cell(i)%etot) !Mass*Energy 
-		
+            do k = 1,4 !Cycle for all nodes in cell		
+                l = el(i)%elem(k) !Number node 
+			!We should reestablish our velocity from flux momentum
+			!   
+			!  5-------3-------2
+			!  |   dum2|  dum1 |    
+			!  |     \ |  /    |
+			!  |      v| v     |
+			!  6------(4)------1   (M*U)^(n+1) = (M*U)^n + 0.25*dUM 
+			!  |      ^| ^     |   (M*U)^(n+1) = (M*U)^n + 0.25*dVM  
+			!  |     / |  \    |
+			!  |  dum3 | dum4  |
+			!  7-------8-------9
+			!
+node(l)%mas_til_vu = node(l)%mas_til_vu+0.125*Fv*((1d0+a_V)*cell(ii)%rho*cell(ii)%Um+(1d0-a_V)*cell(i)%rho*cell(i)%Um) !Mass_v*U-Velocity
+node(l)%mas_til_vv = node(l)%mas_til_vv+0.125*Fv*((1d0+a_V)*cell(ii)%rho*cell(ii)%Vm+(1d0-a_V)*cell(i)%rho*cell(i)%Vm) !Mass_v*V-Velocity
+            enddo
 		enddo ext
 		do j = 1,4 !Cycle for all nodes in cell
 			l = el(i)%elem(j) !Number node
@@ -482,37 +496,12 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 		enddo
 	enddo	
 
-	!Using u_l and v_l as intermedia velocity for optimization
-	node(:)%u_l = node(:)%u !Set U-velocity
-	node(:)%v_l = node(:)%v !Set V-velocity
-	node(:)%u = 0d0 !Set U-velocity on zero
-	node(:)%v = 0d0 !Set V-velocity on zero
-	!Find new vertex velocity
-	do i = 1,size(cell(:))
-		do j = 1,4 !Cycle for all nodes in cell
-			l = el(i)%elem(j) !Number node 
-			!We should reestablish our velocity from flux momentum
-			! But when we have incomplete set cells near node (less <4), we should division on count cell (sum cell near node)
-			!   
-			!  5-------3-------2
-			!  |   dum2|  dum1 |    
-			!  |     \ |  /    |
-			!  |      v| v     |
-			!  6------(4)------1
-			!  |      ^| ^     |
-			!  |     / |  \    |
-			!  |  dum3 | dum4  |
-			!  7-------8-------9
-			! (MU)^(n+1) = (MU)^(n)/count + 1/4dUM 
-			! where "count" - is sum cell near node
-
-			node(l)%u = node(l)%u + 0.25d0*cell(i)%dum/node(l)%mas_til_v + node(l)%mas_v*node(l)%u_l/node(l)%num_cont/node(l)%mas_til_v
-			node(l)%v = node(l)%v + 0.25d0*cell(i)%dvm/node(l)%mas_til_v + node(l)%mas_v*node(l)%v_l/node(l)%num_cont/node(l)%mas_til_v
-		enddo
-		cell(i)%mas = cell(i)%mas_til
-		cell(i)%etot = cell(i)%Me_til/cell(i)%mas_til		
-	enddo
-	node(:)%mas_v = node(:)%mas_til_v
+	
+    cell(:)%mas = cell(:)%mas_til
+    node(:)%u = node(:)%mas_til_vu/node(:)%mas_til_v
+    node(:)%v = node(:)%mas_til_vv/node(:)%mas_til_v
+    cell(:)%etot = cell(:)%Me_til/cell(:)%mas_til
+    node(:)%mas_v = node(:)%mas_til_v
 endif
 
 cell(:)%um = 0d0

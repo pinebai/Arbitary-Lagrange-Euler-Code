@@ -21,8 +21,7 @@ real(8) mas_til !massa for advect
 real(8) Me_til !Mass*Energy for advect
 real(8) um !sum velocity in nodes on center cell (U-componet)
 real(8) vm !sum velocity in nodes on center cell (V-componet)
-real(8) dum !flux impulse U 
-real(8) dvm !flux impulse V
+ 
 
 real(8) uz,ur,vz,vr,diver,rot
 end type cells
@@ -33,7 +32,8 @@ real(8) u,v !velocity u and v
 real(8) u_l,v_l !old velocity
 real(8) mas_v !vertex mass in node
 real(8) mas_til_v !vertex mass in node for advect
-real(8) num_cont !number cell near node
+real(8) mas_til_vu !vertex Mas*U-velocity
+real(8) mas_til_vv !vertex Mas*V-velocity
 integer(4) mark !marker nodes for boundary
 end type nodes
 
