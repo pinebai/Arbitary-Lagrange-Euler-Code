@@ -7,6 +7,7 @@ use type_boundary
 implicit none 
 
 integer(4) i,j,k,l,n 
+integer(4) slide,kl
 integer(4) n_bound,n_node,n_cell
 
 integer(4),allocatable :: bound(:)
@@ -46,54 +47,49 @@ close(1)
 allocate(phy(n_cell)) !allocate physical
 !Initial conditions
 do i = 1,n_cell
-	if (el(i)%elem(5) == 18) then !Number mat - see in GMSH
+	if (el(i)%elem(5) == 9) then !Number mat - see in GMSH
 		phy(i)%rho =  1.0d0
-		phy(i)%e = 2.5d0
+		phy(i)%e = 2.5d0   
 	endif
-	if (el(i)%elem(5) == 14) then 
+	if (el(i)%elem(5) == 11) then 
 		phy(i)%rho = 0.125d0
-		phy(i)%e = 2.0d0
-	endif	
-	if (el(i)%elem(5) == 16) then 
-		phy(i)%rho = 0.125d0
-		phy(i)%e = 2.0d0
-	endif	
-	if (el(i)%elem(5) == 22) then 
-		phy(i)%rho = 0.125d0
-		phy(i)%e = 2.0d0
-	endif	
-	if (el(i)%elem(5) == 20) then 
-		phy(i)%rho = 0.125d0
-		phy(i)%e = 2.0d0
+		phy(i)%e = 2d0
 	endif	
 enddo	
 numer%art = 0.1d0 !Artification viscosity
-numer%grid = 0.0d0 !Grid proportional velocity
+numer%grid = 1d0 !Grid proportional velocity
 numer%a0 = 1d0 ! a0 for Euler stability
-el(:)%rad = 2d0 !Radial
+el(:)%rad = 1d0 !Radial
 
-n = 12
+n = 7
 allocate(bou%type_bound(n))
 bou%type_bound = 0
 bou%type_bound(1) = 4 !Solid wall - fix all boundary velocity
 bou%type_bound(2) = 4
+bou%type_bound(4) = 4
+bou%type_bound(5) = 4 
+
+bou%type_bound(6) = 4
 bou%type_bound(3) = 4
-bou%type_bound(4) = 1 !Reflection
+
 
 
 dt = 0.0001 !time interval
 t = 0d0 !inintial time
-t_end = 0.5d0 !End time calculation
-
+t_end = 0.25d0 !End time calculation
+slide = 100
+kl = 0
 call phase0(el,node,phy,bou,numer) !Initial 
 do while(t<t_end)
+    call out(kl,slide,t,el,node,phy)
 	call phase1(dt,el,node,phy,numer)
 	call velocity(dt,el,node,phy,bou,numer)
-	call energy_fromm(dt,el,node,phy,numer)
+	call energy(dt,el,node,phy,numer)
 	call grid(dt,node,numer)
 	call advect(dt,el,node,phy,bou,numer)
 	t = t + dt
+	kl = kl+1
 enddo
 
-call out(t,el,node,phy)
+
 end
