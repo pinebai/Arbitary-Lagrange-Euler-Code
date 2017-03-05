@@ -140,14 +140,12 @@ real(8) an,ksi
 !This cycle for calculation realxation lagrange grid (See SALE)
 !an and ksi - var parameters
 !See more comments in call posit(...)
-an = 0.001d0
-ksi = 0.0d0
 do i = 1,size(phy(:)) !
 	do j = 1,4 !Cycle for all nodes cell
 		l = el(i)%elem(j) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
 		call posit(i,j,el,im,ip,ia) !Function calculation position + (ip) and - (im)
-node(l)%u = node(l)%u + 0.25d0*an*(0.5d0*(1d0+ksi)*(node(ip)%u_l+node(im)%u_l)-ksi*node(ia)%u_l-node(l)%u_l)
-node(l)%v = node(l)%v + 0.25d0*an*(0.5d0*(1d0+ksi)*(node(ip)%v_l+node(im)%v_l)-ksi*node(ia)%v_l-node(l)%v_l)
+node(l)%u = node(l)%u + 0.25d0*numer%an*(0.5d0*(1d0+numer%ksi)*(node(ip)%u_l+node(im)%u_l)-numer%ksi*node(ia)%u_l-node(l)%u_l)
+node(l)%v = node(l)%v + 0.25d0*numer%an*(0.5d0*(1d0+numer%ksi)*(node(ip)%v_l+node(im)%v_l)-numer%ksi*node(ia)%v_l-node(l)%v_l)
 	enddo
 enddo
 

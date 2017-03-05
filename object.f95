@@ -41,6 +41,7 @@ type numerical
 real(8) art !Artvisc
 real(8) grid  !Proportional between lagrange grid and euler grid (1 - full lagrange, 0 - full euler, other - ALE)
 real(8) a0 !For Euler a0
+real(8) an,ksi !For relax grid
 end type numerical
 
 type boundary

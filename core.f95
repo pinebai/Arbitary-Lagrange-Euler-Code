@@ -63,8 +63,8 @@ enddo
 read(1,*) 
 read(1,*) t,dt,t_end,slide
 read(1,*)
-!Radial, Grid proportional velocity, Artification viscosity, a0 for Euler stability
-read(1,*) rad, numer%grid, numer%art, numer%a0
+!Radial, Grid proportional velocity, Artification viscosity, a0 for Euler stability,an - grid relax ,ksi - grid relax
+read(1,*) rad, numer%grid, numer%art, numer%a0,numer%an,numer%ksi
 el(:)%rad = rad
 read(1,*)
 read(1,*) type_energy
