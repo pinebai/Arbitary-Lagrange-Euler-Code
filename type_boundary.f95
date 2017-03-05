@@ -25,6 +25,9 @@ do i = 1,size(bou%var(:,1))
                 call out_flow(l,bou,node,phy,el,4)
             case(5) !Reflection
                 call reflection(l,bou,node,phy,el,5)
+           ! case(6) !In flow
+            !    call in_flow(l,bou,node,phy,el,6)
+                
         end select
     endif
 enddo
@@ -81,6 +84,50 @@ if (typ == 3) then !If boundary = 3 fix V
     node(i2)%mark = 3
 endif
 end subroutine solid_wall
+
+! subroutine in_flow(l,bou,node,phy,el,typ)
+! type(boundary),intent(inout) :: bou
+! type(nodes),intent(inout) :: node(:)
+! type(physics),intent(inout) :: phy(:)
+! type(elements),intent(inout) :: el(:)
+! integer(4),intent(in) :: l(6),typ
+! integer(4) i1(3),i2(3),el1,el2
+! 
+! el1 = l(3) !Set number cell_1
+! el2 = l(5) !Set number cell_2
+! call posit(l(2),i1(1),i2(1)) !Find index node for element
+! i1(1) = el(l(3))%elem(i1(1)) !node_1 boundary cell_1                
+! i2(1) = el(l(3))%elem(i2(1)) !node_2 boundary cell_1
+! 
+! call posit(l(4),i1(2),i2(2)) !Find index node for element
+! i1(2) = el(l(3))%elem(i1(2)) !node_3 boundary cell_1                 
+! i2(2) = el(l(3))%elem(i2(2)) !node_4 boundary cell_1   
+! 
+! if ((node(i1(1))%mark.ne.1).and.(node(i1(1))%mark.ne.2)) then
+!     node(i1(1))%u = 0.75
+!     node(i1(1))%u_l = 0.75
+! endif
+! 
+! if ((node(i1(1))%mark.ne.1).and.(node(i1(1))%mark.ne.3)) then
+!     node(i1(1))%v = 0.75
+!     node(i1(1))%v_l = 0.75
+! endif
+! 
+! if ((node(i2(1))%mark.ne.1).and.(node(i2(1))%mark.ne.2)) then
+!     node(i2(1))%u = 0.75
+!     node(i2(1))%u_l = 0.75
+! endif
+! 
+! if ((node(i2(1))%mark.ne.1).and.(node(i2(1))%mark.ne.3)) then
+!     node(i2(1))%v = 0.75
+!     node(i2(1))%v_l = 0.75
+! endif
+! 
+! 
+! 
+! 
+! end subroutine in_flow
+
 
 subroutine out_flow(l,bou,node,phy,el,typ)
 type(boundary),intent(inout) :: bou
