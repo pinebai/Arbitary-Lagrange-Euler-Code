@@ -561,21 +561,20 @@ integer(4),intent(in) :: l(4),i
 real(8),intent(in) :: vec(4)
 real(8),intent(out) :: dvecdz,dvecdr
 real(8) area
-
 area = (node(l(2))%z-node(l(4))%z)*(node(l(3))%r-node(l(1))%r)-(node(l(1))%z-node(l(3))%z)*(node(l(4))%r-node(l(2))%r) !Calculation Area
 dvecdz = (vec(2)-vec(4))*(node(l(3))%r-node(l(1))%r)-(vec(1)-vec(3))*(node(l(4))%r-node(l(2))%r)/area
 dvecdr = (vec(3)-vec(1))*(node(l(2))%r-node(l(4))%r)-(vec(2)-vec(4))*(node(l(3))%r-node(l(1))%r)/area
-!Calculation dudr
-
 end subroutine difference
 
-subroutine divergence(dvec_zdz,dvec_rdr,r,vec,rad,diver)
+
+subroutine divergence(dvec_zdz,dvec_rdr,r,vec,rad,diver) !Divergence vector var
 real(8),intent(in) :: dvec_zdz,dvec_rdr,r(4),vec(4),rad
 real(8),intent(out) :: diver
 diver = dvec_zdz+dvec_rdr+(rad-1d0)*(sum(vec))/(sum(r))
 end subroutine divergence
 
-subroutine rotor(dvec_zdr,dvec_rdz,r,vec,rad,rot)
+
+subroutine rotor(dvec_zdr,dvec_rdz,r,vec,rad,rot) !Rotor vector var
 real(8),intent(in) :: dvec_zdr,dvec_rdz,r(4),vec(4),rad
 real(8),intent(out) :: rot
 rot = dvec_zdr-dvec_rdz!+(rad-1d0)*(sum(vec))/(sum(r))

@@ -10,6 +10,7 @@ integer(4) i,j,k,l,n
 integer(4) slide,kl
 integer(4) n_bound,n_node,n_cell,num
 integer(4),allocatable :: bound(:)
+character(20) name_input
 !Var
 real(8) metric,t,t_end,dt
 real(8) ener,dens
@@ -46,7 +47,10 @@ close(1)
 
 allocate(phy(n_cell)) !allocate physical
 
-open(1,file = 'input.inp')
+write(*,*) 'Write name file (see input.inp)'
+read(*,*) name_input
+write(*,*) name_input
+open(1,file = name_input)
 read(1,*)
 read(1,*)
 read(1,*) metric
@@ -86,7 +90,11 @@ close(1)
 
 kl = 0
 call phase0(el,node,phy,bou,numer) !Initial 
-do while(t<t_end)
+
+call system('rm -rf result')
+call system('mkdir result')
+
+do while(t<t_end-dt)
     call out(kl,slide,t,el,node,phy)
 	call phase1(dt,el,node,phy,numer)
 	call velocity(dt,el,node,phy,bou,numer)
@@ -95,7 +103,6 @@ do while(t<t_end)
 	call advect(dt,el,node,phy,bou,numer)
 	t = t + dt
 	kl = kl+1
+	write(*,*) 'cycle =',kl, 'time', t 
 enddo
-
-
 end
