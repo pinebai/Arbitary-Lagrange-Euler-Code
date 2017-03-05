@@ -3,8 +3,8 @@ $metric
 1.0
 $time
         0.0 0.0001 0.25 100
-$numeric    !grid, artvisc, a0
-            1.0 0.01 0.5 
+$numeric    !radial, grid, artvisc, a0 
+            1 0.5 0.01 0.5 
 $boundary !num line, type boundary
             7 6
             1 4
@@ -14,7 +14,15 @@ $boundary !num line, type boundary
             6 4
             3 4
 $regions
+master
 2   !num, density, energy
-    9 1.0 2.5
-    11 0.125 2.0
-
+    plane 
+    0 0 1 1
+    0.125 2.0
+    circle 
+    0 0 0.5
+    0.125 2.0
+!gmsh
+!2   !num, density, energy
+!    9 1.0 2.5
+!    11 0.125 2.0        

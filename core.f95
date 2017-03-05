@@ -10,9 +10,10 @@ integer(4) i,j,k,l,n
 integer(4) slide,kl
 integer(4) n_bound,n_node,n_cell,num
 integer(4),allocatable :: bound(:)
-character(20) name_input
+character(20) name_input,type_init,type_area
 !Var
 real(8) metric,t,t_end,dt
+real(8) z0,z,r0,r,rad,zc,rc
 real(8) ener,dens
 type (physics),allocatable :: phy(:) !All physical value
 type (nodes),allocatable :: node(:)	!All nodes value
@@ -62,8 +63,8 @@ enddo
 read(1,*) 
 read(1,*) t,dt,t_end,slide
 read(1,*)
-!Grid proportional velocity, Artification viscosity, a0 for Euler stability, Radial
-read(1,*) numer%grid, numer%art, numer%a0!, el(:)%rad
+!Radial, Grid proportional velocity, Artification viscosity, a0 for Euler stability
+read(1,*) el(:)%rad, numer%grid, numer%art, numer%a0
 read(1,*)
 read(1,*) n,l !all line in mesh
 
@@ -76,25 +77,59 @@ do i = 1,n
 enddo
 !Initial
 read(1,*) 
-read(1,*) n !all regions
-do j = 1,n
-    read(1,*) num,dens,ener
-    do i = 1,n_cell
-        if (el(i)%elem(5) == num) then !Number mat - see in GMSH
-            phy(i)%rho = dens
-            phy(i)%e = ener 
-        endif
-    enddo
-enddo
-close(1)
 
+read(1,*) type_init
+if (type_init == 'gmsh') then
+    read(1,*) n !all regions
+    do j = 1,n
+        read(1,*) num,dens,ener
+        do i = 1,n_cell
+            if (el(i)%elem(5) == num) then !Number mat - see in GMSH
+                phy(i)%rho = dens
+                phy(i)%e = ener 
+            endif
+        enddo
+    enddo
+endif
+if (type_init == 'master') then
+    read(1,*) n !all regions
+    do j = 1,n
+        read(1,*) type_area 
+        if (type_area == 'plane') then
+            read(1,*) z0,r0,z,r
+            read(1,*) dens,ener
+            do i = 1,n_cell
+                zc = 0.25d0*sum(node(el(i)%elem(:4))%z)
+                rc = 0.25d0*sum(node(el(i)%elem(:4))%r)
+                write(*,*) zc,rc
+                if ((zc>=z0).and.(rc>=r0).and.(zc<=z).and.(rc<=r)) then
+                    phy(i)%rho = dens
+                    phy(i)%e = ener 
+                endif    
+            enddo
+        endif    
+        if (type_area == 'circle') then
+            do i = 1,n_cell
+                read(1,*) z0,r0,Rad
+                read(1,*) dens,ener
+                zc = 0.25d0*sum(node(el(i)%elem(:4))%z)
+                rc = 0.25d0*sum(node(el(i)%elem(:4))%r)
+                if ((zc-z0)**2+(rc-r0)**2<=rad**2) then
+                    phy(i)%rho = dens
+                    phy(i)%e = ener 
+                endif
+            enddo
+        endif    
+    enddo
+endif
+close(1)
 kl = 0
 call phase0(el,node,phy,bou,numer) !Initial 
 
 call system('rm -rf result')
 call system('mkdir result')
 
-do while(t<t_end-dt)
+do while(t<=t_end)
     call out(kl,slide,t,el,node,phy)
 	call phase1(dt,el,node,phy,numer)
 	call velocity(dt,el,node,phy,bou,numer)

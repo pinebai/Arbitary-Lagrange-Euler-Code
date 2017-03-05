@@ -92,6 +92,9 @@ do i = 1,size(phy(:)%vol)
 	!first material then shift to 1
 	do j = 1,4
         l(j) = el(i)%elem(j) 
+        u(j) = node(l(j))%u  
+        v(j) = node(l(j))%v
+        r(j) = node(l(j))%r        
     enddo
     
 	atr = 0.5d0*((node(l(3))%z-node(l(2))%z)*(node(l(1))%r-node(l(2))%r)-(node(l(1))%z-node(l(2))%z)*(node(l(3))%r-node(l(2))%r)) !0.5*((x3-x2)*(y1-y2)-(x1-x2)*(y3-y2))
@@ -111,12 +114,6 @@ do i = 1,size(phy(:)%vol)
 	Dvol = 2d0*(phy(i)%vol - phy(i)%vol_old)/(phy(i)%vol + phy(i)%vol_old)/dt !Calculation Divergence (Equivalen Hemp3D)
 	phy(i)%q = min(0d0,Dvol)*(numer%art*phy(i)%rho*Dvol*phy(i)%Vol**0.666) !Calculation Divergence (Equivalen Hemp3D)	
 	
-	do j = 1,4
-        l(j) = el(i)%elem(j) 
-        u(j) = node(l(j))%u  
-        v(j) = node(l(j))%v
-        r(j) = node(l(j))%r
-    enddo	
 	call difference(i,l,u,phy(i)%uz,phy(i)%ur,el,node)
 	call difference(i,l,v,phy(i)%vz,phy(i)%vr,el,node)
 	
@@ -376,7 +373,7 @@ integer(4) i,j,k,l,ii
 real(8) z_p(4),r_p(4),vol,FV,a_V
 
 if (numer%grid<1) then !if numer%grid = 1 then bypassed this block 
-
+	node(:)%mas_til_v = 0d0
 	do i = 1,size(phy(:)%vol)
 		phy(i)%dum = 0d0 !Set zero flux U -momentum 
 		phy(i)%dvm = 0d0 !Set zero flux V -momentum 
@@ -477,14 +474,12 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 			phy(i)%Me_til = phy(i)%Me_til + 0.5d0*Fv*((1d0+a_V)*phy(ii)%rho*phy(ii)%etot+(1d0-a_V)*phy(i)%rho*phy(i)%etot) !Mass*Energy 
 		
 		enddo ext
-	enddo	
-	node(:)%mas_til_v = 0d0
-	do i = 1,size(phy(:))
 		do j = 1,4 !Cycle for all nodes in cell
 			l = el(i)%elem(j) !Number node
 			node(l)%mas_til_v = node(l)%mas_til_v+0.25d0*phy(i)%mas_til ! M_v = 1/4(M1+M2+M3+M4) 
 		enddo
 	enddo	
+
 	!Using u_l and v_l as intermedia velocity for optimization
 	node(:)%u_l = node(:)%u !Set U-velocity
 	node(:)%v_l = node(:)%v !Set V-velocity
@@ -511,14 +506,11 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 
 			node(l)%u = node(l)%u + 0.25d0*phy(i)%dum/node(l)%mas_til_v + node(l)%mas_v*node(l)%u_l/node(l)%num_cont/node(l)%mas_til_v
 			node(l)%v = node(l)%v + 0.25d0*phy(i)%dvm/node(l)%mas_til_v + node(l)%mas_v*node(l)%v_l/node(l)%num_cont/node(l)%mas_til_v
-		enddo	
+		enddo
+		phy(i)%mas = phy(i)%mas_til
+		phy(i)%etot = phy(i)%Me_til/phy(i)%mas_til		
 	enddo
 	node(:)%mas_v = node(:)%mas_til_v
-	do i = 1,size(phy(:)%vol)
-		phy(i)%mas = phy(i)%mas_til
-		phy(i)%etot = phy(i)%Me_til/phy(i)%mas_til
-	enddo
-	
 endif
 
 phy(:)%um = 0d0
