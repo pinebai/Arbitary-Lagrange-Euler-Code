@@ -15,7 +15,7 @@ character(20) name_input,type_init,type_area,type_energy
 real(8) metric,t,t_end,dt
 real(8) z0,z,r0,r,rad,zc,rc
 real(8) ener,dens
-type (physics),allocatable :: phy(:) !All physical value
+type (cells),allocatable :: cell(:) !All cellsical value
 type (nodes),allocatable :: node(:)	!All nodes value
 type (elements),allocatable :: el(:) !Elements (cell {node1,node2,node3,node4}) and contact elements for Advection
 type (boundary) bou !Boundary elements
@@ -46,7 +46,7 @@ do i = 1,n_cell
 enddo
 close(1)
 
-allocate(phy(n_cell)) !allocate physical
+allocate(cell(n_cell)) !allocate cellsical
 
 write(*,*) 'Write name file (see input.inp)'
 read(*,*) name_input
@@ -87,8 +87,8 @@ if (type_init == 'gmsh') then
         read(1,*) num,dens,ener
         do i = 1,n_cell
             if (el(i)%elem(5) == num) then !Number mat - see in GMSH
-                phy(i)%rho = dens
-                phy(i)%e = ener 
+                cell(i)%rho = dens
+                cell(i)%e = ener 
             endif
         enddo
     enddo
@@ -104,8 +104,8 @@ if (type_init == 'master') then
                 zc = 0.25d0*sum(node(el(i)%elem(:4))%z)
                 rc = 0.25d0*sum(node(el(i)%elem(:4))%r)
                 if ((zc>=z0).and.(rc>=r0).and.(zc<=z).and.(rc<=r)) then
-                    phy(i)%rho = dens
-                    phy(i)%e = ener 
+                    cell(i)%rho = dens
+                    cell(i)%e = ener 
                 endif    
             enddo
         endif    
@@ -116,8 +116,8 @@ if (type_init == 'master') then
                 zc = 0.25d0*sum(node(el(i)%elem(:4))%z)
                 rc = 0.25d0*sum(node(el(i)%elem(:4))%r)
                 if ((zc-z0)**2+(rc-r0)**2<=rad**2) then
-                    phy(i)%rho = dens
-                    phy(i)%e = ener 
+                    cell(i)%rho = dens
+                    cell(i)%e = ener 
                 endif
             enddo
         endif    
@@ -125,21 +125,21 @@ if (type_init == 'master') then
 endif
 close(1)
 kl = 0
-call phase0(el,node,phy,bou,numer) !Initial 
+call phase0(el,node,cell,bou,numer) !Initial 
 
 call system('rm -rf result')
 call system('mkdir result')
 
 do while(t<=t_end+dt)
-    call out(kl,slide,t,el,node,phy)
-	call phase1(dt,el,node,phy,numer)
-	call velocity(dt,el,node,phy,bou,numer)
+    call out(kl,slide,t,el,node,cell)
+	call phase1(dt,el,node,cell,numer)
+	call velocity(dt,el,node,cell,bou,numer)
     
-    if (type_energy == 'fromm') call energy(dt,el,node,phy,numer)
-	if (type_energy == 'noncon') call energy_fromm(dt,el,node,phy,numer)
+    if (type_energy == 'fromm') call energy(dt,el,node,cell,numer)
+	if (type_energy == 'noncon') call energy_fromm(dt,el,node,cell,numer)
 	
 	call grid(dt,node,numer)
-	call advect(dt,el,node,phy,bou,numer)
+	call advect(dt,el,node,cell,bou,numer)
 	t = t + dt
 	kl = kl+1
 	write(*,*) 'cycle =',kl, 'time', t 

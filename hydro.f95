@@ -5,10 +5,10 @@ use type_boundary
 implicit none
 contains
 
-subroutine phase0(el,node,phy,bou,numer)
+subroutine phase0(el,node,cell,bou,numer)
 type(elements),intent(inout) :: el(:)
 type(nodes),intent(inout) :: node(:)
-type(physics),intent(inout) :: phy(:)
+type(cells),intent(inout) :: cell(:)
 type(boundary),intent(inout) :: bou
 type(numerical),intent(inout) :: numer
 integer(4) i,j,l(4)
@@ -18,7 +18,7 @@ node(:)%mas_v = 0d0
 node(:)%num_cont = 0d0
 node(:)%mark = 0
 
-do i = 1,size(phy(:)%vol)
+do i = 1,size(cell(:)%vol)
 
 ! 3-----2
 ! |     |
@@ -45,13 +45,13 @@ do i = 1,size(phy(:)%vol)
 	endif
 
 	
-	phy(i)%sig = sign(1d0,abl+atr) !Sign volume (Very important)
-	phy(i)%vol = abs(abl)+abs(atr) !Calculaion volume cell
+	cell(i)%sig = sign(1d0,abl+atr) !Sign volume (Very important)
+	cell(i)%vol = abs(abl)+abs(atr) !Calculaion volume cell
 	
-	phy(i)%vol_old = phy(i)%vol !Set first old volume 
-	phy(i)%mas = phy(i)%rho*phy(i)%vol ! Calculation massa in cell
+	cell(i)%vol_old = cell(i)%vol !Set first old volume 
+	cell(i)%mas = cell(i)%rho*cell(i)%vol ! Calculation massa in cell
 	
-	call gas(i,phy)
+	call gas(i,cell)
 
 !Set old velocity
 	node(l(1))%u_l = node(l(1))%u 
@@ -66,27 +66,27 @@ do i = 1,size(phy(:)%vol)
 
 !Calculation vertex mass and number cell near node
 	do j = 1,4 !cycle for all nodes in current cell 
-		node(l(j))%mas_v = node(l(j))%mas_v + 0.25d0*phy(i)%mas
+		node(l(j))%mas_v = node(l(j))%mas_v + 0.25d0*cell(i)%mas
 		node(l(j))%num_cont = node(l(j))%num_cont + 1d0
 	enddo
 enddo
-call boundary_flow(bou,node,phy,el)
+call boundary_flow(bou,node,cell,el)
 end subroutine phase0
 
 
-subroutine phase1(dt,el,node,phy,numer)
+subroutine phase1(dt,el,node,cell,numer)
 type(elements),intent(inout) :: el(:)
 type(nodes),intent(inout) :: node(:)
-type(physics),intent(inout) :: phy(:)
+type(cells),intent(inout) :: cell(:)
 type(numerical),intent(inout) :: numer
 real(8),intent(in) :: dt
 integer(4) i,j,l(4)
 real(8) atr,abl,u(4),v(4),r(4)
 real(8) Dvol
 
-do i = 1,size(phy(:)%vol)
+do i = 1,size(cell(:)%vol)
 	!Calculation EOS
-	call gas(i,phy)
+	call gas(i,cell)
 	
 	!Calculation volume,mass and density
 	!first material then shift to 1
@@ -105,30 +105,30 @@ do i = 1,size(phy(:)%vol)
         abl = abl*((node(l(1))%r+node(l(3))%r+node(l(4))%r)/3d0)
 	endif
 	
-	phy(i)%vol_old = phy(i)%vol !Set old volume 
-	phy(i)%vol = abs(abl)+abs(atr) !Calcualtion new volume 
-	phy(i)%rho = phy(i)%mas/phy(i)%vol !Calculation density
-	phy(i)%mas = phy(i)%rho*phy(i)%vol !Calculation massa
+	cell(i)%vol_old = cell(i)%vol !Set old volume 
+	cell(i)%vol = abs(abl)+abs(atr) !Calcualtion new volume 
+	cell(i)%rho = cell(i)%mas/cell(i)%vol !Calculation density
+	cell(i)%mas = cell(i)%rho*cell(i)%vol !Calculation massa
 	
 	!Calculation artvisc
-	Dvol = 2d0*(phy(i)%vol - phy(i)%vol_old)/(phy(i)%vol+phy(i)%vol_old)/dt !Calculation Divergence (Equivalen Hemp3D)
-	phy(i)%q = min(0d0,Dvol)*(numer%art*phy(i)%rho*Dvol*phy(i)%Vol**0.666) !Calculation Divergence (Equivalen Hemp3D)	
+	Dvol = 2d0*(cell(i)%vol - cell(i)%vol_old)/(cell(i)%vol+cell(i)%vol_old)/dt !Calculation Divergence (Equivalen Hemp3D)
+	cell(i)%q = min(0d0,Dvol)*(numer%art*cell(i)%rho*Dvol*cell(i)%Vol**0.666) !Calculation Divergence (Equivalen Hemp3D)	
 	
-	call difference(i,l,u,phy(i)%uz,phy(i)%ur,el,node)
-	call difference(i,l,v,phy(i)%vz,phy(i)%vr,el,node)
+	call difference(i,l,u,cell(i)%uz,cell(i)%ur,el,node)
+	call difference(i,l,v,cell(i)%vz,cell(i)%vr,el,node)
 	
 	
-	call divergence(phy(i)%uz,phy(i)%vr,r,v,el(i)%rad,phy(i)%diver)
-    call rotor(phy(i)%ur,phy(i)%vz,r,v,el(i)%rad,phy(i)%rot)
+	call divergence(cell(i)%uz,cell(i)%vr,r,v,el(i)%rad,cell(i)%diver)
+    call rotor(cell(i)%ur,cell(i)%vz,r,v,el(i)%rad,cell(i)%rot)
 	!rotor(dvec_zdr,dvec_rdz,rot)
 enddo
 end subroutine phase1
 
 
-subroutine velocity(dt,el,node,phy,bou,numer)
+subroutine velocity(dt,el,node,cell,bou,numer)
 type(elements),intent(inout) :: el(:)
 type(nodes),intent(inout) :: node(:)
-type(physics),intent(inout) :: phy(:)
+type(cells),intent(inout) :: cell(:)
 type (boundary),intent(inout) :: bou
 type(numerical),intent(inout) :: numer
 real(8),intent(in) :: dt
@@ -140,7 +140,7 @@ real(8) an,ksi
 !This cycle for calculation realxation lagrange grid (See SALE)
 !an and ksi - var parameters
 !See more comments in call posit(...)
-do i = 1,size(phy(:)) !
+do i = 1,size(cell(:)) !
 	do j = 1,4 !Cycle for all nodes cell
 		l = el(i)%elem(j) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
 		call posit(i,j,el,im,ip,ia) !Function calculation position + (ip) and - (im)
@@ -149,16 +149,16 @@ node(l)%v = node(l)%v + 0.25d0*numer%an*(0.5d0*(1d0+numer%ksi)*(node(ip)%v_l+nod
 	enddo
 enddo
 
-call boundary_flow(bou,node,phy,el)
+call boundary_flow(bou,node,cell,el)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-do i = 1,size(phy(:)) !
+do i = 1,size(cell(:)) !
 	do j = 1,4 !Cycle for all nodes cell
 		l = el(i)%elem(j) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
 		call posit(i,j,el,im,ip,ia) !Function calculation position 
 		
-		acc_z = 0.5d0*phy(i)%sig*(phy(i)%p+phy(i)%q)*(node(ip)%r-node(im)%r)/node(l)%mas_v !Caluclation z-component acceleration 
-		acc_r = 0.5d0*phy(i)%sig*(phy(i)%p+phy(i)%q)*(node(im)%z-node(ip)%z)/node(l)%mas_v !Caluclation r-component acceleration
+		acc_z = 0.5d0*cell(i)%sig*(cell(i)%p+cell(i)%q)*(node(ip)%r-node(im)%r)/node(l)%mas_v !Caluclation z-component acceleration 
+		acc_r = 0.5d0*cell(i)%sig*(cell(i)%p+cell(i)%q)*(node(im)%z-node(ip)%z)/node(l)%mas_v !Caluclation r-component acceleration
         
         if (el(i)%rad == 2) then
             acc_z = acc_z*(0.5d0*(node(ip)%r+node(im)%r)) !Radial component for z
@@ -170,7 +170,7 @@ do i = 1,size(phy(:)) !
 	enddo	
 enddo	
 
-call boundary_flow(bou,node,phy,el)
+call boundary_flow(bou,node,cell,el)
 contains
 
 subroutine posit(i,j,el,im,ip,ia)
@@ -240,27 +240,27 @@ end subroutine velocity
 
 
 
-subroutine energy(dt,el,node,phy,numer)
+subroutine energy(dt,el,node,cell,numer)
 type(elements),intent(inout) :: el(:)
 type(nodes),intent(inout) :: node(:)
-type(physics),intent(inout) :: phy(:)
+type(cells),intent(inout) :: cell(:)
 type(numerical),intent(inout) :: numer
 real(8),intent(in) :: dt
 integer(4) i,j,k,l
 real(8) atr,abl,z_til(4),r_til(4),u_til(4),v_til(4),vol_til
 
-phy(:)%um = 0d0 !Set zero cell velocity U-component
-phy(:)%vm = 0d0 !Set zero cell velocity V-component
+cell(:)%um = 0d0 !Set zero cell velocity U-component
+cell(:)%vm = 0d0 !Set zero cell velocity V-component
 
-do i = 1,size(phy(:))
+do i = 1,size(cell(:))
 	do j = 1,4 !Cycle for all nodes cell
 		l = el(i)%elem(j) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
 		u_til(j) = 0.5d0*(node(l)%u+node(l)%u_l) ! U_til = 1/2(U+U_old) - intermediate velocity (See SALE2D or Samarsky)
 		v_til(j) = 0.5d0*(node(l)%v+node(l)%v_l) ! V_til = 1/2(V+V_old) - intermediate velocity (See SALE2D or Samarsky)
 		z_til(j) = node(l)%z + u_til(j)*dt !Calculation new intermediate z-position for define intermediate Volume
 		r_til(j) = node(l)%r + v_til(j)*dt !Calculation new intermediate r-position for define intermediate Volume
-		phy(i)%um = phy(i)%um + 0.25d0*node(l)%u !Calculation cell-centered velocity U
-		phy(i)%vm = phy(i)%vm + 0.25d0*node(l)%v !Calculation cell-centered velocity V
+		cell(i)%um = cell(i)%um + 0.25d0*node(l)%u !Calculation cell-centered velocity U
+		cell(i)%vm = cell(i)%vm + 0.25d0*node(l)%v !Calculation cell-centered velocity V
 	enddo
 
 	atr = 0.5d0*((z_til(3)-z_til(2))*(r_til(1)-r_til(2))-(z_til(1)-z_til(2))*(r_til(3)-r_til(2))) !(right triangle) (also as Volume in subroutine Volume) 
@@ -272,8 +272,8 @@ do i = 1,size(phy(:))
 	endif
 	
 	vol_til = abs(abl)+abs(atr) !intermedia Volume
-	phy(i)%e = phy(i)%e-(phy(i)%p+phy(i)%q)*(vol_til-phy(i)%vol)/phy(i)%mas !Calculation inner energy (See SALE2D or Samarsky)
-	phy(i)%etot = phy(i)%e + 0.5d0*(phy(i)%um*phy(i)%um+phy(i)%vm*phy(i)%vm)!Calculation Total energy 
+	cell(i)%e = cell(i)%e-(cell(i)%p+cell(i)%q)*(vol_til-cell(i)%vol)/cell(i)%mas !Calculation inner energy (See SALE2D or Samarsky)
+	cell(i)%etot = cell(i)%e + 0.5d0*(cell(i)%um*cell(i)%um+cell(i)%vm*cell(i)%vm)!Calculation Total energy 
 enddo
 end subroutine energy
 
@@ -282,35 +282,35 @@ end subroutine energy
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !Conservative energy calculation!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine energy_fromm(dt,el,node,phy,numer)
+subroutine energy_fromm(dt,el,node,cell,numer)
 type(elements),intent(inout) :: el(:)
 type(nodes),intent(inout) :: node(:)
-type(physics),intent(inout) :: phy(:)
+type(cells),intent(inout) :: cell(:)
 type(numerical),intent(inout) :: numer
 real(8),intent(in) :: dt
 integer(4) i,j,k(4),ii,l
 real(8) atr,abl,u_til,v_til,Pij,side
 
-phy(:)%um = 0d0 !Set zero cell velocity U-component
-phy(:)%vm = 0d0 !Set zero cell velocity V-component
+cell(:)%um = 0d0 !Set zero cell velocity U-component
+cell(:)%vm = 0d0 !Set zero cell velocity V-component
 
-do i = 1,size(phy(:))
+do i = 1,size(cell(:))
     u_til = 0d0
     v_til = 0d0
     k = 0
 	do j = 1,4 !Cycle for all nodes cell
 		l = el(i)%elem(j) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
         k(j) = l
-		phy(i)%um = phy(i)%um + 0.25d0*node(l)%u !Calculation cell-centered velocity U
-		phy(i)%vm = phy(i)%vm + 0.25d0*node(l)%v !Calculation cell-centered velocity V
+		cell(i)%um = cell(i)%um + 0.25d0*node(l)%u !Calculation cell-centered velocity U
+		cell(i)%vm = cell(i)%vm + 0.25d0*node(l)%v !Calculation cell-centered velocity V
 		u_til = u_til+0.25d0*node(l)%u_l
 		v_til = v_til+0.25d0*node(l)%v_l
 	enddo
-    phy(i)%etot = phy(i)%e+0.5d0*(u_til*u_til+v_til*v_til)
+    cell(i)%etot = cell(i)%e+0.5d0*(u_til*u_til+v_til*v_til)
     
     do j = 1,el(i)%cont(9) !Cycle for all contact elements in el(:)%cont
 		ii = el(i)%cont(j) !Number contact element 
-		pij = ((phy(i)%p+phy(i)%q)*phy(ii)%mas+phy(i)%mas*(phy(ii)%p+phy(ii)%q))/(phy(ii)%mas+phy(i)%mas) !Weight mass-preassure. See YAQUII
+		pij = ((cell(i)%p+cell(i)%q)*cell(ii)%mas+cell(i)%mas*(cell(ii)%p+cell(ii)%q))/(cell(ii)%mas+cell(i)%mas) !Weight mass-preassure. See YAQUII
 		!    ------2------
 		!           \
 		!      P1,M1 \ P2,M2    Pij = (M1*P2+M2*P1)/(M1+M2)
@@ -345,7 +345,7 @@ do i = 1,size(phy(:))
                 if (el(i)%rad == 2) side = side*0.5d0*(node(k(1))%r+node(k(4))%r)
          end select
          
-         phy(i)%etot = phy(i)%etot-dt/phy(i)%mas*pij*(phy(i)%sig*side) !Calculation Total energy
+         cell(i)%etot = cell(i)%etot-dt/cell(i)%mas*pij*(cell(i)%sig*side) !Calculation Total energy
      enddo    
 enddo
 end subroutine energy_fromm
@@ -364,10 +364,10 @@ enddo
 end subroutine grid
 
 
-subroutine advect(dt,el,node,phy,bou,numer) !Subroutine calculation advection
+subroutine advect(dt,el,node,cell,bou,numer) !Subroutine calculation advection
 type(elements),intent(inout) :: el(:)
 type(nodes),intent(inout) :: node(:)
-type(physics),intent(inout) :: phy(:)
+type(cells),intent(inout) :: cell(:)
 type (boundary),intent(inout) :: bou
 type(numerical),intent(inout) :: numer
 real(8),intent(in) :: dt
@@ -376,11 +376,11 @@ real(8) z_p(4),r_p(4),vol,FV,a_V
 
 if (numer%grid<1) then !if numer%grid = 1 then bypassed this block 
 	node(:)%mas_til_v = 0d0
-	do i = 1,size(phy(:)%vol)
-		phy(i)%dum = 0d0 !Set zero flux U -momentum 
-		phy(i)%dvm = 0d0 !Set zero flux V -momentum 
-		phy(i)%mas_til = phy(i)%mas !Set intermedia mass equivalent mass
-		phy(i)%Me_til = phy(i)%mas*phy(i)%etot !Set intermedia Mass*energy (Total energy)
+	do i = 1,size(cell(:)%vol)
+		cell(i)%dum = 0d0 !Set zero flux U -momentum 
+		cell(i)%dvm = 0d0 !Set zero flux V -momentum 
+		cell(i)%mas_til = cell(i)%mas !Set intermedia mass equivalent mass
+		cell(i)%Me_til = cell(i)%mas*cell(i)%etot !Set intermedia Mass*energy (Total energy)
 
 		! el(i)%cont(j)  (contact_1 contact_2 contact_3 contact_4 side_1 side_2 side_3 side_4) 
 
@@ -468,17 +468,17 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 					exit ext
 			end select
 		
-			FV = -phy(i)%sig*volume_adv(z_p,r_p,el(i)%rad) !Calculation volume cell-shift
+			FV = -cell(i)%sig*volume_adv(z_p,r_p,el(i)%rad) !Calculation volume cell-shift
 			a_V = numer%a0*sign(1d0,Fv) !For stability a0 = 1d0 - change variable (0 - unstable 1- more diffuse, using 0 - 1)  
-			phy(i)%mas_til = phy(i)%mas_til+ 0.5d0*Fv*((1d0+a_V)*phy(ii)%rho+(1d0-a_V)*phy(i)%rho) !Calculation mass  Fv(0.5[rho_ii+rho_i]) - See Fletcher (vol. 1) or SALE2D (YAQUII)
-			phy(i)%dum = phy(i)%dum + 0.5d0*Fv*((1d0+a_V)*phy(ii)%rho*phy(ii)%Um+(1d0-a_V)*phy(i)%rho*phy(i)%Um) !flux U -momentum 
-			phy(i)%dvm = phy(i)%dvm + 0.5d0*Fv*((1d0+a_V)*phy(ii)%rho*phy(ii)%Vm+(1d0-a_V)*phy(i)%rho*phy(i)%Vm) !flux V -momentum 
-			phy(i)%Me_til = phy(i)%Me_til + 0.5d0*Fv*((1d0+a_V)*phy(ii)%rho*phy(ii)%etot+(1d0-a_V)*phy(i)%rho*phy(i)%etot) !Mass*Energy 
+			cell(i)%mas_til = cell(i)%mas_til+ 0.5d0*Fv*((1d0+a_V)*cell(ii)%rho+(1d0-a_V)*cell(i)%rho) !Calculation mass  Fv(0.5[rho_ii+rho_i]) - See Fletcher (vol. 1) or SALE2D (YAQUII)
+			cell(i)%dum = cell(i)%dum + 0.5d0*Fv*((1d0+a_V)*cell(ii)%rho*cell(ii)%Um+(1d0-a_V)*cell(i)%rho*cell(i)%Um) !flux U -momentum 
+			cell(i)%dvm = cell(i)%dvm + 0.5d0*Fv*((1d0+a_V)*cell(ii)%rho*cell(ii)%Vm+(1d0-a_V)*cell(i)%rho*cell(i)%Vm) !flux V -momentum 
+			cell(i)%Me_til = cell(i)%Me_til + 0.5d0*Fv*((1d0+a_V)*cell(ii)%rho*cell(ii)%etot+(1d0-a_V)*cell(i)%rho*cell(i)%etot) !Mass*Energy 
 		
 		enddo ext
 		do j = 1,4 !Cycle for all nodes in cell
 			l = el(i)%elem(j) !Number node
-			node(l)%mas_til_v = node(l)%mas_til_v+0.25d0*phy(i)%mas_til ! M_v = 1/4(M1+M2+M3+M4) 
+			node(l)%mas_til_v = node(l)%mas_til_v+0.25d0*cell(i)%mas_til ! M_v = 1/4(M1+M2+M3+M4) 
 		enddo
 	enddo	
 
@@ -488,7 +488,7 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 	node(:)%u = 0d0 !Set U-velocity on zero
 	node(:)%v = 0d0 !Set V-velocity on zero
 	!Find new vertex velocity
-	do i = 1,size(phy(:))
+	do i = 1,size(cell(:))
 		do j = 1,4 !Cycle for all nodes in cell
 			l = el(i)%elem(j) !Number node 
 			!We should reestablish our velocity from flux momentum
@@ -506,27 +506,27 @@ if (numer%grid<1) then !if numer%grid = 1 then bypassed this block
 			! (MU)^(n+1) = (MU)^(n)/count + 1/4dUM 
 			! where "count" - is sum cell near node
 
-			node(l)%u = node(l)%u + 0.25d0*phy(i)%dum/node(l)%mas_til_v + node(l)%mas_v*node(l)%u_l/node(l)%num_cont/node(l)%mas_til_v
-			node(l)%v = node(l)%v + 0.25d0*phy(i)%dvm/node(l)%mas_til_v + node(l)%mas_v*node(l)%v_l/node(l)%num_cont/node(l)%mas_til_v
+			node(l)%u = node(l)%u + 0.25d0*cell(i)%dum/node(l)%mas_til_v + node(l)%mas_v*node(l)%u_l/node(l)%num_cont/node(l)%mas_til_v
+			node(l)%v = node(l)%v + 0.25d0*cell(i)%dvm/node(l)%mas_til_v + node(l)%mas_v*node(l)%v_l/node(l)%num_cont/node(l)%mas_til_v
 		enddo
-		phy(i)%mas = phy(i)%mas_til
-		phy(i)%etot = phy(i)%Me_til/phy(i)%mas_til		
+		cell(i)%mas = cell(i)%mas_til
+		cell(i)%etot = cell(i)%Me_til/cell(i)%mas_til		
 	enddo
 	node(:)%mas_v = node(:)%mas_til_v
 endif
 
-phy(:)%um = 0d0
-phy(:)%vm = 0d0
+cell(:)%um = 0d0
+cell(:)%vm = 0d0
 !Calculation inner energy from new total energy
-do i = 1,size(phy(:)%vol)
+do i = 1,size(cell(:)%vol)
 	do j = 1,4 !Cycle for all nodes in cell
 		l = el(i)%elem(j) !Number node
-        phy(i)%um = phy(i)%um + 0.25d0*node(l)%u !Calculation cell-centered velocity U
-		phy(i)%vm = phy(i)%vm + 0.25d0*node(l)%v !Calculation cell-centered velocity V
+        cell(i)%um = cell(i)%um + 0.25d0*node(l)%u !Calculation cell-centered velocity U
+		cell(i)%vm = cell(i)%vm + 0.25d0*node(l)%v !Calculation cell-centered velocity V
 	enddo	
-    phy(i)%e = phy(i)%etot - 0.5d0*(phy(i)%um*phy(i)%um+phy(i)%vm*phy(i)%vm)
+    cell(i)%e = cell(i)%etot - 0.5d0*(cell(i)%um*cell(i)%um+cell(i)%vm*cell(i)%vm)
 enddo
-call boundary_flow(bou,node,phy,el)
+call boundary_flow(bou,node,cell,el)
 node(:)%u_l = node(:)%u
 node(:)%v_l = node(:)%v
 

@@ -5,7 +5,7 @@ integer(4) cont(9) !Contact elements : el1 el2 el3 el4 side1 side2 side3 side4
 real(8) rad !radial
 end type elements
 
-type physics
+type cells
 real(8) sig !Sign countours 
 real(8) vol !volume
 real(8) rho !density
@@ -25,7 +25,7 @@ real(8) dum !flux impulse U
 real(8) dvm !flux impulse V
 
 real(8) uz,ur,vz,vr,diver,rot
-end type physics
+end type cells
 
 type nodes
 real(8) z,r !coordinates

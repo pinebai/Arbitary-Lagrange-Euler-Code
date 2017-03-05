@@ -2,11 +2,11 @@ module type_boundary
 use object	
 implicit none
 contains
-subroutine boundary_flow(bou,node,phy,el)
+subroutine boundary_flow(bou,node,cell,el)
 type(boundary),intent(inout) :: bou
 type(nodes),intent(inout) :: node(:)
 type(elements),intent(inout) :: el(:)
-type(physics),intent(inout) :: phy(:)
+type(cells),intent(inout) :: cell(:)
 integer(4) i,l(6),k
 
 do i = 1,size(bou%var(:,1))
@@ -16,27 +16,27 @@ do i = 1,size(bou%var(:,1))
     if (k.ne.0) then
         select case(k)
             case(1) !Full fix U and V
-                call solid_wall(l,bou,node,phy,el,1)
+                call solid_wall(l,bou,node,cell,el,1)
             case(2) !Fix U
-                call solid_wall(l,bou,node,phy,el,2)
+                call solid_wall(l,bou,node,cell,el,2)
             case(3) !Fix V
-                call solid_wall(l,bou,node,phy,el,3)
+                call solid_wall(l,bou,node,cell,el,3)
             case(4) !Out flow
-                call out_flow(l,bou,node,phy,el,4)
+                call out_flow(l,bou,node,cell,el,4)
             case(5) !Reflection
-                call reflection(l,bou,node,phy,el,5)
+                call reflection(l,bou,node,cell,el,5)
            ! case(6) !In flow
-            !    call in_flow(l,bou,node,phy,el,6)
+            !    call in_flow(l,bou,node,cell,el,6)
                 
         end select
     endif
 enddo
 
 contains
-subroutine solid_wall(l,bou,node,phy,el,typ)
+subroutine solid_wall(l,bou,node,cell,el,typ)
 type(boundary),intent(inout) :: bou
 type(nodes),intent(inout) :: node(:)
-type(physics),intent(inout) :: phy(:)
+type(cells),intent(inout) :: cell(:)
 type(elements),intent(inout) :: el(:)
 integer(4),intent(in) :: l(6),typ
 integer(4) i1,i2
@@ -85,10 +85,10 @@ if (typ == 3) then !If boundary = 3 fix V
 endif
 end subroutine solid_wall
 
-! subroutine in_flow(l,bou,node,phy,el,typ)
+! subroutine in_flow(l,bou,node,cell,el,typ)
 ! type(boundary),intent(inout) :: bou
 ! type(nodes),intent(inout) :: node(:)
-! type(physics),intent(inout) :: phy(:)
+! type(cells),intent(inout) :: cell(:)
 ! type(elements),intent(inout) :: el(:)
 ! integer(4),intent(in) :: l(6),typ
 ! integer(4) i1(3),i2(3),el1,el2
@@ -129,10 +129,10 @@ end subroutine solid_wall
 ! end subroutine in_flow
 
 
-subroutine out_flow(l,bou,node,phy,el,typ)
+subroutine out_flow(l,bou,node,cell,el,typ)
 type(boundary),intent(inout) :: bou
 type(nodes),intent(inout) :: node(:)
-type(physics),intent(inout) :: phy(:)
+type(cells),intent(inout) :: cell(:)
 type(elements),intent(inout) :: el(:)
 integer(4),intent(in) :: l(6),typ
 integer(4) i1(3),i2(3),el1,el2
@@ -168,15 +168,15 @@ if ((node(i2(1))%mark.ne.1).and.(node(i2(1))%mark.ne.3)) then
     node(i2(1))%v_l = node(i2(2))%v_l
 endif
 
-phy(el1)%p = phy(el2)%p  
-phy(el1)%rho = phy(el2)%rho 
-phy(el1)%e = phy(el2)%e
+cell(el1)%p = cell(el2)%p  
+cell(el1)%rho = cell(el2)%rho 
+cell(el1)%e = cell(el2)%e
 end subroutine out_flow
 
-subroutine reflection(l,bou,node,phy,el,typ)
+subroutine reflection(l,bou,node,cell,el,typ)
 type(boundary),intent(inout) :: bou
 type(nodes),intent(inout) :: node(:)
-type(physics),intent(inout) :: phy(:)
+type(cells),intent(inout) :: cell(:)
 type(elements),intent(inout) :: el(:)
 integer(4),intent(in) :: l(6),typ
 integer(4) i1(3),i2(3),el1,el2
@@ -220,9 +220,9 @@ if ((node(i2(1))%mark.ne.1)) then!  .or.(node(i2(1))%mark.ne.3)) then
     node(i2(1))%v_l = -node(i2(3))%v_l
 endif
 
-phy(el1)%p = phy(el2)%p  
-phy(el1)%rho = phy(el2)%rho 
-phy(el1)%e = phy(el2)%e
+cell(el1)%p = cell(el2)%p  
+cell(el1)%rho = cell(el2)%rho 
+cell(el1)%e = cell(el2)%e
 end subroutine reflection
 
 end subroutine boundary_flow
