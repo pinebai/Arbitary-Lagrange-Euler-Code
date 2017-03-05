@@ -10,7 +10,7 @@ integer(4) i,j,k,l,n
 integer(4) slide,kl
 integer(4) n_bound,n_node,n_cell,num
 integer(4),allocatable :: bound(:)
-character(20) name_input,type_init,type_area
+character(20) name_input,type_init,type_area,type_energy 
 !Var
 real(8) metric,t,t_end,dt
 real(8) z0,z,r0,r,rad,zc,rc
@@ -65,9 +65,11 @@ read(1,*) t,dt,t_end,slide
 read(1,*)
 !Radial, Grid proportional velocity, Artification viscosity, a0 for Euler stability
 read(1,*) rad, numer%grid, numer%art, numer%a0
+el(:)%rad = rad
+read(1,*)
+read(1,*) type_energy
 read(1,*)
 read(1,*) n,l !all line in mesh
-el(:)%rad = rad
 allocate(bou%type_bound(n))
 n = l
 bou%type_bound = 0
@@ -132,7 +134,10 @@ do while(t<=t_end+dt)
     call out(kl,slide,t,el,node,phy)
 	call phase1(dt,el,node,phy,numer)
 	call velocity(dt,el,node,phy,bou,numer)
-	call energy(dt,el,node,phy,numer)
+    
+    if (type_energy == 'fromm') call energy(dt,el,node,phy,numer)
+	if (type_energy == 'noncon') call energy_fromm(dt,el,node,phy,numer)
+	
 	call grid(dt,node,numer)
 	call advect(dt,el,node,phy,bou,numer)
 	t = t + dt

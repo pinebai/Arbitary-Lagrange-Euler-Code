@@ -111,7 +111,7 @@ do i = 1,size(phy(:)%vol)
 	phy(i)%mas = phy(i)%rho*phy(i)%vol !Calculation massa
 	
 	!Calculation artvisc
-	Dvol = 2d0*(phy(i)%vol - phy(i)%vol_old)/(phy(i)%vol + phy(i)%vol_old)/dt !Calculation Divergence (Equivalen Hemp3D)
+	Dvol = 2d0*(phy(i)%vol - phy(i)%vol_old)/(phy(i)%vol+phy(i)%vol_old)/dt !Calculation Divergence (Equivalen Hemp3D)
 	phy(i)%q = min(0d0,Dvol)*(numer%art*phy(i)%rho*Dvol*phy(i)%Vol**0.666) !Calculation Divergence (Equivalen Hemp3D)	
 	
 	call difference(i,l,u,phy(i)%uz,phy(i)%ur,el,node)
@@ -279,74 +279,78 @@ do i = 1,size(phy(:))
 enddo
 end subroutine energy
 
-!Need research!!!!
-! subroutine energy_fromm(dt,el,node,phy,numer)
-! type(elements),intent(inout) :: el(:)
-! type(nodes),intent(inout) :: node(:)
-! type(physics),intent(inout) :: phy(:)
-! type(numerical),intent(inout) :: numer
-! real(8),intent(in) :: dt
-! integer(4) i,j,k(4),ii,l
-! real(8) atr,abl,u_til,v_til,Pij,side
-! 
-! phy(:)%um = 0d0 !Set zero cell velocity U-component
-! phy(:)%vm = 0d0 !Set zero cell velocity V-component
-! 
-! do i = 1,size(phy(:))
-!     u_til = 0d0
-!     v_til = 0d0
-!     k = 0
-! 	do j = 1,4 !Cycle for all nodes cell
-! 		l = el(i)%elem(j) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
-!         k(j) = l
-! 		phy(i)%um = phy(i)%um + 0.25d0*node(l)%u !Calculation cell-centered velocity U
-! 		phy(i)%vm = phy(i)%vm + 0.25d0*node(l)%v !Calculation cell-centered velocity V
-! 		u_til = u_til+0.25d0*node(l)%u_l
-! 		v_til = v_til+0.25d0*node(l)%v_l
-! 	enddo
-!     phy(i)%etot = phy(i)%e+0.5d0*(u_til*u_til+v_til*v_til)
-!     
-!     do j = 1,el(i)%cont(9) !Cycle for all contact elements in el(:)%cont
-! 		ii = el(i)%cont(j) !Number contact element 
-! 		pij = ((phy(i)%p+phy(i)%q)*phy(ii)%mas+phy(i)%mas*(phy(ii)%p+phy(ii)%q))/(phy(ii)%mas+phy(i)%mas) !Weight mass-preassure. See YAQUII
-! 		!    ------2------
-! 		!           \
-! 		!      P1,M1 \ P2,M2    Pij = (M1*P2+M2*P1)/(M1+M2)
-! 		!             \
-! 		!        ------1------
-! 		select case(el(i)%cont(j+4)) !Define number side contact
-! 		!      2
-! 		!      |
-! 		!   3----2   
-! 		! 3-|    |-1 
-! 		!   4----1
-! 		!      |
-! 		!      4
-! 			case(1) !Right side
-!                 side = 0.5d0*((node(k(2))%u+node(k(1))%u)*(node(k(2))%r-node(k(1))%r)-&
-!                 (node(k(2))%v+node(k(1))%v)*(node(k(2))%z-node(k(1))%z)) 
-!                 if (el(i)%rad == 2) side = side*0.5d0*(node(k(2))%r+node(k(1))%r)
-!                     
-!             case(2) !Top side
-!                 side = 0.5d0*((node(k(3))%u+node(k(2))%u)*(node(k(3))%r-node(k(2))%r)-&
-!                 (node(k(3))%v+node(k(2))%v)*(node(k(3))%z-node(k(2))%z))
-!                 if (el(i)%rad == 2) side = side*0.5d0*(node(k(3))%r+node(k(2))%r)
-!                 
-!             case(3) !Left sid
-!                 side = 0.5d0*((node(k(4))%u+node(k(3))%u)*(node(k(4))%r-node(k(3))%r)-&
-!                 (node(k(4))%v+node(k(3))%v)*(node(k(4))%z-node(k(3))%z))
-!                 if (el(i)%rad == 2) side = side*0.5d0*(node(k(4))%r+node(k(3))%r)
-!                     
-!             case(4) !Bottom side
-!                 side = 0.5d0*((node(k(1))%u+node(k(4))%u)*(node(k(1))%r-node(k(4))%r)-&
-!                 (node(k(1))%v+node(k(4))%v)*(node(k(1))%z-node(k(4))%z))                
-!                 if (el(i)%rad == 2) side = side*0.5d0*(node(k(1))%r+node(k(4))%r)
-!          end select
-!          
-!          phy(i)%etot = phy(i)%etot-dt/phy(i)%mas*pij*(phy(i)%sig*side) !Calculation Total energy
-!      enddo    
-! enddo
-! end subroutine energy_fromm
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!Need research interecation with boundary!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!Conservative energy calculation!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+subroutine energy_fromm(dt,el,node,phy,numer)
+type(elements),intent(inout) :: el(:)
+type(nodes),intent(inout) :: node(:)
+type(physics),intent(inout) :: phy(:)
+type(numerical),intent(inout) :: numer
+real(8),intent(in) :: dt
+integer(4) i,j,k(4),ii,l
+real(8) atr,abl,u_til,v_til,Pij,side
+
+phy(:)%um = 0d0 !Set zero cell velocity U-component
+phy(:)%vm = 0d0 !Set zero cell velocity V-component
+
+do i = 1,size(phy(:))
+    u_til = 0d0
+    v_til = 0d0
+    k = 0
+	do j = 1,4 !Cycle for all nodes cell
+		l = el(i)%elem(j) !index in el(:)%elem next (N_mat node_1 node_2 node_3 node_4)
+        k(j) = l
+		phy(i)%um = phy(i)%um + 0.25d0*node(l)%u !Calculation cell-centered velocity U
+		phy(i)%vm = phy(i)%vm + 0.25d0*node(l)%v !Calculation cell-centered velocity V
+		u_til = u_til+0.25d0*node(l)%u_l
+		v_til = v_til+0.25d0*node(l)%v_l
+	enddo
+    phy(i)%etot = phy(i)%e+0.5d0*(u_til*u_til+v_til*v_til)
+    
+    do j = 1,el(i)%cont(9) !Cycle for all contact elements in el(:)%cont
+		ii = el(i)%cont(j) !Number contact element 
+		pij = ((phy(i)%p+phy(i)%q)*phy(ii)%mas+phy(i)%mas*(phy(ii)%p+phy(ii)%q))/(phy(ii)%mas+phy(i)%mas) !Weight mass-preassure. See YAQUII
+		!    ------2------
+		!           \
+		!      P1,M1 \ P2,M2    Pij = (M1*P2+M2*P1)/(M1+M2)
+		!             \
+		!        ------1------
+		select case(el(i)%cont(j+4)) !Define number side contact
+		!      2
+		!      |
+		!   3----2   
+		! 3-|    |-1 
+		!   4----1
+		!      |
+		!      4
+			case(1) !Right side
+                side = 0.5d0*((node(k(2))%u+node(k(1))%u)*(node(k(2))%r-node(k(1))%r)-&
+                (node(k(2))%v+node(k(1))%v)*(node(k(2))%z-node(k(1))%z)) 
+                if (el(i)%rad == 2) side = side*0.5d0*(node(k(2))%r+node(k(1))%r)
+                    
+            case(2) !Top side
+                side = 0.5d0*((node(k(3))%u+node(k(2))%u)*(node(k(3))%r-node(k(2))%r)-&
+                (node(k(3))%v+node(k(2))%v)*(node(k(3))%z-node(k(2))%z))
+                if (el(i)%rad == 2) side = side*0.5d0*(node(k(3))%r+node(k(2))%r)
+                
+            case(3) !Left sid
+                side = 0.5d0*((node(k(4))%u+node(k(3))%u)*(node(k(4))%r-node(k(3))%r)-&
+                (node(k(4))%v+node(k(3))%v)*(node(k(4))%z-node(k(3))%z))
+                if (el(i)%rad == 2) side = side*0.5d0*(node(k(4))%r+node(k(3))%r)
+                    
+            case(4) !Bottom side
+                side = 0.5d0*((node(k(1))%u+node(k(4))%u)*(node(k(1))%r-node(k(4))%r)-&
+                (node(k(1))%v+node(k(4))%v)*(node(k(1))%z-node(k(4))%z))                
+                if (el(i)%rad == 2) side = side*0.5d0*(node(k(1))%r+node(k(4))%r)
+         end select
+         
+         phy(i)%etot = phy(i)%etot-dt/phy(i)%mas*pij*(phy(i)%sig*side) !Calculation Total energy
+     enddo    
+enddo
+end subroutine energy_fromm
 
 subroutine grid(dt,node,numer) 
 type(nodes),intent(inout) :: node(:)

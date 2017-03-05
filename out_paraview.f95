@@ -29,49 +29,55 @@ if (mod(kl,slide) == 0) then
     write(1,*) '<CellData Scalars="scalars">'
     
     !rotor!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    write(1,*) '<DataArray type="Float64" Name="rot" format="ascii">'
+    write(1,*) '<DataArray type="Float64" Name="Rotor velocity" format="ascii">'
     do i = 1,size(phy(:))
     write(1,*) phy(i)%rot
     enddo
     write(1,*) '</DataArray>'
     
     !divergence!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    write(1,*) '<DataArray type="Float64" Name="div" format="ascii">'
+    write(1,*) '<DataArray type="Float64" Name="Divergence velocity" format="ascii">'
     do i = 1,size(phy(:))
     write(1,*) phy(i)%diver
     enddo
     write(1,*) '</DataArray>'
     
     !massa!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    write(1,*) '<DataArray type="Float64" Name="mas" format="ascii">'
+    write(1,*) '<DataArray type="Float64" Name="Massa" format="ascii">'
     do i = 1,size(phy(:))
     write(1,*) phy(i)%mas
     enddo
     write(1,*) '</DataArray>'
     !Density!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    write(1,*) '<DataArray type="Float64" Name="rho" format="ascii">'
+    write(1,*) '<DataArray type="Float64" Name="Density" format="ascii">'
     do i = 1,size(phy(:))
     write(1,*) phy(i)%rho
     enddo
     write(1,*) '</DataArray>'
     !Volume!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    write(1,*) '<DataArray type="Float64" Name="vol" format="ascii">'
+    write(1,*) '<DataArray type="Float64" Name="Volume" format="ascii">'
     do i = 1,size(phy(:))
     write(1,*) phy(i)%vol
     enddo
     write(1,*) '</DataArray>'
     !Preasure!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    write(1,*) '<DataArray type="Float64" Name="P" format="ascii">'
+    write(1,*) '<DataArray type="Float64" Name="Preassure" format="ascii">'
     do i = 1,size(phy(:))
     write(1,*) phy(i)%p
     enddo
     write(1,*) '</DataArray>'
     !Energy!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    write(1,*) '<DataArray type="Float64" Name="e" format="ascii">'
+    write(1,*) '<DataArray type="Float64" Name="Inner energy" format="ascii">'
     do i = 1,size(phy(:))
     write(1,*) phy(i)%e
     enddo
     write(1,*) '</DataArray>'
+    !Total Energy!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    write(1,*) '<DataArray type="Float64" Name="Total energy" format="ascii">'
+    do i = 1,size(phy(:))
+    write(1,*) phy(i)%e
+    enddo
+    write(1,*) '</DataArray>'    
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     write(1,*) '</CellData>'
     write(1,*) '<Cells>'
