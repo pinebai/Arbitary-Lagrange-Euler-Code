@@ -8,11 +8,11 @@ implicit none
 
 integer(4) i,j,k,l,n 
 integer(4) slide,kl
-integer(4) n_bound,n_node,n_cell
-
+integer(4) n_bound,n_node,n_cell,num
 integer(4),allocatable :: bound(:)
 !Var
-real(8) t,t_end,dt
+real(8) metric,t,t_end,dt
+real(8) ener,dens
 type (physics),allocatable :: phy(:) !All physical value
 type (nodes),allocatable :: node(:)	!All nodes value
 type (elements),allocatable :: el(:) !Elements (cell {node1,node2,node3,node4}) and contact elements for Advection
@@ -45,39 +45,45 @@ enddo
 close(1)
 
 allocate(phy(n_cell)) !allocate physical
-!Initial conditions
-do i = 1,n_cell
-	if (el(i)%elem(5) == 9) then !Number mat - see in GMSH
-		phy(i)%rho =  1.0d0
-		phy(i)%e = 2.5d0   
-	endif
-	if (el(i)%elem(5) == 11) then 
-		phy(i)%rho = 0.125d0
-		phy(i)%e = 2d0
-	endif	
-enddo	
-numer%art = 0.1d0 !Artification viscosity
-numer%grid = 1d0 !Grid proportional velocity
-numer%a0 = 1d0 ! a0 for Euler stability
-el(:)%rad = 1d0 !Radial
 
-n = 7
+open(1,file = 'input.inp')
+read(1,*)
+read(1,*)
+read(1,*) metric
+do i = 1,n_node
+    node(i)%z = metric*node(i)%z
+    node(i)%r = metric*node(i)%r 
+enddo
+!Start time, time interval, end time, number out file
+read(1,*) 
+read(1,*) t,dt,t_end,slide
+read(1,*)
+!Grid proportional velocity, Artification viscosity, a0 for Euler stability, Radial
+read(1,*) numer%grid, numer%art, numer%a0!, el(:)%rad
+read(1,*)
+read(1,*) n,l !all line in mesh
+
 allocate(bou%type_bound(n))
+n = l
 bou%type_bound = 0
-bou%type_bound(1) = 4 !Solid wall - fix all boundary velocity
-bou%type_bound(2) = 4
-bou%type_bound(4) = 4
-bou%type_bound(5) = 4 
+do i = 1,n
+    read(1,*) j,l
+    bou%type_bound(j) = l
+enddo
+!Initial
+read(1,*) 
+read(1,*) n !all regions
+do j = 1,n
+    read(1,*) num,dens,ener
+    do i = 1,n_cell
+        if (el(i)%elem(5) == num) then !Number mat - see in GMSH
+            phy(i)%rho = dens
+            phy(i)%e = ener 
+        endif
+    enddo
+enddo
+close(1)
 
-bou%type_bound(6) = 4
-bou%type_bound(3) = 4
-
-
-
-dt = 0.0001 !time interval
-t = 0d0 !inintial time
-t_end = 0.25d0 !End time calculation
-slide = 100
 kl = 0
 call phase0(el,node,phy,bou,numer) !Initial 
 do while(t<t_end)
