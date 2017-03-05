@@ -140,7 +140,7 @@ real(8) an,ksi
 !This cycle for calculation realxation lagrange grid (See SALE)
 !an and ksi - var parameters
 !See more comments in call posit(...)
-an = 0.0005d0
+an = 0.001d0
 ksi = 0.0d0
 do i = 1,size(phy(:)) !
 	do j = 1,4 !Cycle for all nodes cell

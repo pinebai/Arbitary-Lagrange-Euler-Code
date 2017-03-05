@@ -64,10 +64,10 @@ read(1,*)
 read(1,*) t,dt,t_end,slide
 read(1,*)
 !Radial, Grid proportional velocity, Artification viscosity, a0 for Euler stability
-read(1,*) el(:)%rad, numer%grid, numer%art, numer%a0
+read(1,*) rad, numer%grid, numer%art, numer%a0
 read(1,*)
 read(1,*) n,l !all line in mesh
-
+el(:)%rad = rad
 allocate(bou%type_bound(n))
 n = l
 bou%type_bound = 0
@@ -101,7 +101,6 @@ if (type_init == 'master') then
             do i = 1,n_cell
                 zc = 0.25d0*sum(node(el(i)%elem(:4))%z)
                 rc = 0.25d0*sum(node(el(i)%elem(:4))%r)
-                write(*,*) zc,rc
                 if ((zc>=z0).and.(rc>=r0).and.(zc<=z).and.(rc<=r)) then
                     phy(i)%rho = dens
                     phy(i)%e = ener 
@@ -109,9 +108,9 @@ if (type_init == 'master') then
             enddo
         endif    
         if (type_area == 'circle') then
+            read(1,*) z0,r0,Rad
+            read(1,*) dens,ener        
             do i = 1,n_cell
-                read(1,*) z0,r0,Rad
-                read(1,*) dens,ener
                 zc = 0.25d0*sum(node(el(i)%elem(:4))%z)
                 rc = 0.25d0*sum(node(el(i)%elem(:4))%r)
                 if ((zc-z0)**2+(rc-r0)**2<=rad**2) then
@@ -129,7 +128,7 @@ call phase0(el,node,phy,bou,numer) !Initial
 call system('rm -rf result')
 call system('mkdir result')
 
-do while(t<=t_end)
+do while(t<=t_end+dt)
     call out(kl,slide,t,el,node,phy)
 	call phase1(dt,el,node,phy,numer)
 	call velocity(dt,el,node,phy,bou,numer)
