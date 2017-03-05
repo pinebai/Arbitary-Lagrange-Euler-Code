@@ -19,7 +19,7 @@ node(:)%num_cont = 0d0
 node(:)%mark = 0
 
 do i = 1,size(phy(:)%vol)
-!
+
 ! 3-----2
 ! |     |
 ! 4-----1
@@ -30,10 +30,10 @@ do i = 1,size(phy(:)%vol)
 !el(i)%elem
 !1 2 3 4
 
-	l(1) = el(i)%elem(1) 
-	l(2) = el(i)%elem(2)
-	l(3) = el(i)%elem(3)
-	l(4) = el(i)%elem(4)
+	do j = 1,4
+        l(j) = el(i)%elem(j) 
+    enddo
+
 
 !Calculation triangles left and right in cell 
 	atr = 0.5d0*((node(l(3))%z-node(l(2))%z)*(node(l(1))%r-node(l(2))%r)-(node(l(1))%z-node(l(2))%z)*(node(l(3))%r-node(l(2))%r)) !0.5*((x3-x2)*(y1-y2)-(x1-x2)*(y3-y2))
@@ -80,8 +80,8 @@ type(nodes),intent(inout) :: node(:)
 type(physics),intent(inout) :: phy(:)
 type(numerical),intent(inout) :: numer
 real(8),intent(in) :: dt
-integer(4) i,l(4)
-real(8) atr, abl
+integer(4) i,j,l(4)
+real(8) atr,abl,u(4),v(4),r(4)
 real(8) Dvol
 
 do i = 1,size(phy(:)%vol)
@@ -90,11 +90,10 @@ do i = 1,size(phy(:)%vol)
 	
 	!Calculation volume,mass and density
 	!first material then shift to 1
-	l(1) = el(i)%elem(1) 
-	l(2) = el(i)%elem(2)
-	l(3) = el(i)%elem(3)
-	l(4) = el(i)%elem(4)
-
+	do j = 1,4
+        l(j) = el(i)%elem(j) 
+    enddo
+    
 	atr = 0.5d0*((node(l(3))%z-node(l(2))%z)*(node(l(1))%r-node(l(2))%r)-(node(l(1))%z-node(l(2))%z)*(node(l(3))%r-node(l(2))%r)) !0.5*((x3-x2)*(y1-y2)-(x1-x2)*(y3-y2))
 	abl = 0.5d0*((node(l(1))%z-node(l(4))%z)*(node(l(3))%r-node(l(4))%r)-(node(l(3))%z-node(l(4))%z)*(node(l(1))%r-node(l(4))%r)) !0.5*((x1-x4)*(y3-y4)-(x3-x4)*(y1-y4))
 
@@ -112,6 +111,19 @@ do i = 1,size(phy(:)%vol)
 	Dvol = 2d0*(phy(i)%vol - phy(i)%vol_old)/(phy(i)%vol + phy(i)%vol_old)/dt !Calculation Divergence (Equivalen Hemp3D)
 	phy(i)%q = min(0d0,Dvol)*(numer%art*phy(i)%rho*Dvol*phy(i)%Vol**0.666) !Calculation Divergence (Equivalen Hemp3D)	
 	
+	do j = 1,4
+        l(j) = el(i)%elem(j) 
+        u(j) = node(l(j))%u  
+        v(j) = node(l(j))%v
+        r(j) = node(l(j))%r
+    enddo	
+	call difference(i,l,u,phy(i)%uz,phy(i)%ur,el,node)
+	call difference(i,l,v,phy(i)%vz,phy(i)%vr,el,node)
+	
+	
+	call divergence(phy(i)%uz,phy(i)%vr,r,v,el(i)%rad,phy(i)%diver)
+    call rotor(phy(i)%ur,phy(i)%vz,r,v,el(i)%rad,phy(i)%rot)
+	!rotor(dvec_zdr,dvec_rdz,rot)
 enddo
 end subroutine phase1
 
@@ -542,28 +554,31 @@ end function volume_adv
 end subroutine advect
 
 
-subroutine difference(i,dudz,dudr,dvdz,dvdr,el,node)
+subroutine difference(i,l,vec,dvecdz,dvecdr,el,node)
 type(elements),intent(inout) :: el(:)
 type(nodes),intent(inout) :: node(:)
-integer(4),intent(in) :: i
-real(8),intent(out) :: dudz,dudr,dvdz,dvdr
+integer(4),intent(in) :: l(4),i
+real(8),intent(in) :: vec(4)
+real(8),intent(out) :: dvecdz,dvecdr
 real(8) area
-integer(4) l(4)
-
-l(1) = el(i)%elem(1) 
-l(2) = el(i)%elem(2)
-l(3) = el(i)%elem(3)
-l(4) = el(i)%elem(4)
 
 area = (node(l(2))%z-node(l(4))%z)*(node(l(3))%r-node(l(1))%r)-(node(l(1))%z-node(l(3))%z)*(node(l(4))%r-node(l(2))%r) !Calculation Area
+dvecdz = (vec(2)-vec(4))*(node(l(3))%r-node(l(1))%r)-(vec(1)-vec(3))*(node(l(4))%r-node(l(2))%r)/area
+dvecdr = (vec(3)-vec(1))*(node(l(2))%r-node(l(4))%r)-(vec(2)-vec(4))*(node(l(3))%r-node(l(1))%r)/area
+!Calculation dudr
 
-dudz = (node(l(2))%u-node(l(4))%u)*(node(l(3))%r-node(l(1))%r)-(node(l(1))%u-node(l(3))%u)*(node(l(4))%r-node(l(2))%r)/area !Calculation dudz
-dudr = (node(l(3))%u-node(l(1))%u)*(node(l(2))%r-node(l(4))%r)-(node(l(2))%u-node(l(4))%u)*(node(l(3))%r-node(l(1))%r)/area!+& !Calculation dudr
-!(el(i)%rad-1d0)*(node(l(1))%u+node(l(2))%u+node(l(3))%u+node(l(4))%u)/(node(l(1))%r+node(l(2))%r+node(l(3))%r+node(l(4))%r)
-
-dvdz = (node(l(2))%v-node(l(4))%v)*(node(l(3))%r-node(l(1))%r)-(node(l(1))%v-node(l(3))%v)*(node(l(4))%r-node(l(2))%r)/area !Calculation dvdz
-dvdr = (node(l(3))%v-node(l(1))%v)*(node(l(2))%r-node(l(4))%r)-(node(l(2))%v-node(l(4))%v)*(node(l(3))%r-node(l(1))%r)/area!+& !Calculation dvdr
-!(el(i)%rad-1d0)*(node(l(1))%u+node(l(2))%u+node(l(3))%u+node(l(4))%u)/(node(l(1))%r+node(l(2))%r+node(l(3))%r+node(l(4))%r)
 end subroutine difference
+
+subroutine divergence(dvec_zdz,dvec_rdr,r,vec,rad,diver)
+real(8),intent(in) :: dvec_zdz,dvec_rdr,r(4),vec(4),rad
+real(8),intent(out) :: diver
+diver = dvec_zdz+dvec_rdr+(rad-1d0)*(sum(vec))/(sum(r))
+end subroutine divergence
+
+subroutine rotor(dvec_zdr,dvec_rdz,r,vec,rad,rot)
+real(8),intent(in) :: dvec_zdr,dvec_rdz,r(4),vec(4),rad
+real(8),intent(out) :: rot
+rot = dvec_zdr-dvec_rdz!+(rad-1d0)*(sum(vec))/(sum(r))
+end subroutine rotor
 
 end module hydro

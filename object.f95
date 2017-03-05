@@ -23,6 +23,8 @@ real(8) um !sum velocity in nodes on center cell (U-componet)
 real(8) vm !sum velocity in nodes on center cell (V-componet)
 real(8) dum !flux impulse U 
 real(8) dvm !flux impulse V
+
+real(8) uz,ur,vz,vr,diver,rot
 end type physics
 
 type nodes

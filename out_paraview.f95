@@ -27,7 +27,22 @@ if (mod(kl,slide) == 0) then
     write(1,*) '</DataArray>'
     write(1,*) '</Points>'
     write(1,*) '<CellData Scalars="scalars">'
-    !Density!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    !rotor!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    write(1,*) '<DataArray type="Float64" Name="rot" format="ascii">'
+    do i = 1,size(phy(:))
+    write(1,*) phy(i)%rot
+    enddo
+    write(1,*) '</DataArray>'
+    
+    !divergence!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    write(1,*) '<DataArray type="Float64" Name="div" format="ascii">'
+    do i = 1,size(phy(:))
+    write(1,*) phy(i)%diver
+    enddo
+    write(1,*) '</DataArray>'
+    
+    !massa!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     write(1,*) '<DataArray type="Float64" Name="mas" format="ascii">'
     do i = 1,size(phy(:))
     write(1,*) phy(i)%mas
